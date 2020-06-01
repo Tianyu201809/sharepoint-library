@@ -1,2 +1,3 @@
-# sharepoint-library
-sharepoint library
+sharepoint工具类库文件
+
+该js封装了sp列表操作
