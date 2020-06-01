@@ -380,7 +380,6 @@ function getUrlVars() {
  * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
  * 不填写用户参数，则默认为当前用户
  */
-//获取用户权限
 function getUserGroups(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
     return new Promise(function (resolve, reject) {
