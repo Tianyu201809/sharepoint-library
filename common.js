@@ -404,10 +404,3 @@ function getUserGroups(username) {
 
     })
 }
-
-/**
- * 
- */
-function test(){
-
-}
