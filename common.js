@@ -42,7 +42,6 @@ function getListDataSync(listName, query, arrayField) {
         CAMLQuery: query,
         completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-
                 $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                     for (let j = 0; j < arrayField.length; j++) {
                         data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
