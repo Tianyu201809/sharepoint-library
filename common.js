@@ -4,7 +4,6 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * 官方SPService地址：https://archive.codeplex.com/?p=spservices
  * version 1.0
  * 作者: Tianyu Zhang
  * 时间: 2020-06-01
@@ -20,13 +19,13 @@
  */
 function getListDataSync(listName, query, arrayField) {
     var data = [];
-    if (!listName || !arguments[0]) {
+    if (!listName) {
         return "调用getListDataAsync时，请填写listName!"
     }
-    if (!arrayField || !arguments[2]) {
+    if (!arrayField) {
         return "调用getListDataAsync时，请输入查询字段列表['Title','ID'...]";
     }
-    if (!query || !arguments[1]) {
+    if (!query) {
         query = '<Query><Where></Where></Query>';
     }
 
@@ -34,7 +33,7 @@ function getListDataSync(listName, query, arrayField) {
     for (var k = 0; k < arrayField.length; k++) {
         _viewFields += "<FieldRef Name='" + arrayField[k] + "' />";
     }
-    _viewFields += "<ViewFields>";
+    _viewFields += "</ViewFields>";
     $().SPServices({
         operation: 'GetListItems',
         async: false,
@@ -44,11 +43,14 @@ function getListDataSync(listName, query, arrayField) {
         completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                 $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                    for (let j = 0; j < arrayField.length; j++) {
-                        data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                    for (var j = 0; j < arrayField.length; j++) {
+                        var key = String(arrayField[j]);
+                        data[i] ? data[i]:data[i] = {};
+                        data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                     }
                 });
             } else {
+                var err = {};
                 err['response'] = xData.responseXML;
                 err['status'] = "error";
                 data = [];
@@ -69,21 +71,23 @@ function getListDataSync(listName, query, arrayField) {
  */
 function getListDataAsync(listName, query, arrayField) {
     return new Promise(function (resolve, reject) {
-        if (!listName || !arguments[0]) {
-            reject("调用getListDataAsync时，请填写listName!")
+        if (!listName) {
+            reject("调用getListDataAsync时，请填写listName!");
+            return;
         }
-        if (!arrayField || !arguments[2]) {
+        if (!arrayField) {
             reject("调用getListDataAsync时，请输入查询字段列表['Title','ID'...]");
+            return;
         }
-        if (!query || !arguments[1]) {
+        if (!query) {
             query = '<Query><Where></Where></Query>';
-        }
+         }
 
         var _viewFields = "<ViewFields>";
         for (var k = 0; k < arrayField.length; k++) {
             _viewFields += "<FieldRef Name='" + arrayField[k] + "' />";
         }
-        _viewFields += "<ViewFields>";
+        _viewFields += "</ViewFields>";
         $().SPServices({
             operation: 'GetListItems',
             async: true,
@@ -94,8 +98,10 @@ function getListDataAsync(listName, query, arrayField) {
                 if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                     var data = [];
                     $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                        for (let j = 0; j < arrayField.length; j++) {
-                            data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                        for (var j = 0; j < arrayField.length; j++) {
+                            var key = String(arrayField[j]);
+                            data[i] ? data[i]:data[i] = {};
+                            data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                         }
                     });
                     resolve(data);
@@ -118,7 +124,7 @@ function getListDataAsync(listName, query, arrayField) {
 
 function insertDataIntoListSync(listName, data) {
     var itemID;
-    var obj;
+    var obj = {};
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
@@ -380,6 +386,7 @@ function getUrlVars() {
  * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
  * 不填写用户参数，则默认为当前用户
  */
+//获取用户权限
 function getUserGroups(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
     return new Promise(function (resolve, reject) {
@@ -403,7 +410,6 @@ function getUserGroups(username) {
 
     })
 }
-
 /**
  * 对象克隆方法（深度克隆）
  */
