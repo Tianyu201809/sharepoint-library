@@ -414,10 +414,22 @@ function getUserGroups(username) {
 
     })
 }
+
+
 /**
  * 对象克隆方法（深度克隆）
  */
 function cloneObj(obj) {
     return JSON.parse(JSON.stringify(obj))
 }
- 
+
+/**
+ * 获取数组中最大的数据
+ * 如果传入参数不是数组，或者传入的数组中存在非数字的元素，返回NaN
+ */
+function getMaxNumFromArray(arr) {
+    if(Object.prototype.toString.call(arr).indexOf('Array') === -1){
+       return NaN;
+    }
+    return Math.max.apply(Math, arr);
+  }
