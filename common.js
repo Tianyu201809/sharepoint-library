@@ -67,7 +67,7 @@ function getListDataSync(listName, query, arrayField) {
  * 注意填写arrayField参数时，list的显示字段和技术字段的名称要保持一致
  * @param {*string} listName 所查询列表的名称
  * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>"
- * @param {*array => ["Title","ID"...]} arrayField   所需要查询的字段，如果不填则查询所有字段 
+ * @param {*array => ["Title","ID"...]} arrayField  必填
  */
 function getListDataAsync(listName, query, arrayField) {
     return new Promise(function (resolve, reject) {
