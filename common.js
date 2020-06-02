@@ -266,7 +266,7 @@ function updateListItemSync(listName, itemID, data) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = 'ID:'+ itemID + " updated success";
+                obj['response'] = 'ID:' + itemID + " updated success";
                 obj['ID'] = itemID;
             } else {
                 obj['status'] = "error";
@@ -307,7 +307,7 @@ function updateListItemAsync(listName, itemID, data) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = 'ID:'+ itemID + " updated success";
+                    obj['response'] = 'ID:' + itemID + " updated success";
                     obj['ID'] = itemID;
                     resolve(obj);
                 } else {
@@ -390,8 +390,7 @@ function getUrlVars() {
  * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
  * 不填写用户参数，则默认为当前用户
  */
-//获取用户权限
-function getUserGroups(username) {
+function getUserGroupsAsync(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
     return new Promise(function (resolve, reject) {
         var userInGroup = [];
@@ -414,6 +413,33 @@ function getUserGroups(username) {
 
     })
 }
+
+/**
+ * 获取用户所包含的Group，同步函数，返回一个数组
+ * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
+ * 不填写用户参数，则默认为当前用户
+ */
+function getUserGroupsSync(username) {
+    username ? username : username = $().SPServices.SPGetCurrentUser();
+    var userInGroup = [];
+    $().SPServices({
+        operation: "GetGroupCollectionFromUser",
+        userLoginName: username,
+        async: false,
+        completefunc: function (xData, Status) {
+            if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
+                $(xData.responseXML).SPFilterNode("Group").each(function () {
+                    userInGroup.push($(this).attr("Name") || "");
+                });
+            } else {
+                userInGroup = []
+            }
+
+        }
+    });
+  return userInGroup;
+}
+
 /**
  * 对象克隆方法（深度克隆）
  */
