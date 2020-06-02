@@ -46,7 +46,7 @@ function getListDataSync(listName, query, arrayField) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
                         data[i] ? data[i]:data[i] = {};
-                        data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                        data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                     }
                 });
             } else {
