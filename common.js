@@ -4,7 +4,7 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.0
+ * version 1.0  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: Tianyu Zhang
  * 时间: 2020-06-01
  */
@@ -45,7 +45,7 @@ function getListDataSync(listName, query, arrayField) {
                 $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
-                        data[i] ? data[i]:data[i] = {};
+                        data[i] ? data[i] : data[i] = {};
                         data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                     }
                 });
@@ -81,7 +81,7 @@ function getListDataAsync(listName, query, arrayField) {
         }
         if (!query) {
             query = '<Query><Where></Where></Query>';
-         }
+        }
 
         var _viewFields = "<ViewFields>";
         for (var k = 0; k < arrayField.length; k++) {
@@ -100,7 +100,7 @@ function getListDataAsync(listName, query, arrayField) {
                     $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                         for (var j = 0; j < arrayField.length; j++) {
                             var key = String(arrayField[j]);
-                            data[i] ? data[i]:data[i] = {};
+                            data[i] ? data[i] : data[i] = {};
                             data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                         }
                     });
@@ -198,7 +198,7 @@ function delListItemSync(listName, itemID) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = itemID + "deleted success";
+                obj['response'] = 'ID:' + itemID + " deleted success";
             } else {
                 obj['status'] = "error";
                 obj['response'] = xData.responseXML;
@@ -225,7 +225,7 @@ function delListItemAsync(listName, itemID) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = itemID + "deleted success";
+                    obj['response'] = 'ID:' + itemID + " deleted success";
                     resolve(obj);
                 } else {
                     var err = {};
@@ -251,8 +251,10 @@ function updateListItemSync(listName, itemID, data) {
     if (!itemID) {
         return "Please input itemID";
     }
-    if (Object.prototype.toString.call(data).indexOf('Array') !== -1) {
-        return "Please input data (Array format)";
+    for (var i = 0; i < data.length; i++) {
+        if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
+            return "Please input data (Array format)";
+        }
     }
     var obj = {};
     $().SPServices({
@@ -264,7 +266,7 @@ function updateListItemSync(listName, itemID, data) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = itemID + "updated success";
+                obj['response'] = 'ID:'+ itemID + " updated success";
                 obj['ID'] = itemID;
             } else {
                 obj['status'] = "error";
@@ -273,6 +275,7 @@ function updateListItemSync(listName, itemID, data) {
             }
         }
     });
+    return obj;
 }
 
 /**
@@ -282,17 +285,18 @@ function updateListItemSync(listName, itemID, data) {
  * @param {*array => [['Title','123'],['field1','123'],['field2','123']...]} 必填
  */
 function updateListItemAsync(listName, itemID, data) {
-    return new Promise(function () {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             return Promise.reject("Please input listname");
         }
         if (!itemID) {
             return Promise.reject("Please input itemID");
         }
-        if (Object.prototype.toString.call(data).indexOf('Array') !== -1) {
-            return Promise.reject("Please input data (Array format)");
+        for (var i = 0; i < data.length; i++) {
+            if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
+                return Promise.reject("Please input data (Array format)");
+            }
         }
-
         $().SPServices({
             operation: "UpdateListItems",
             async: true,
@@ -303,7 +307,7 @@ function updateListItemAsync(listName, itemID, data) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = itemID + "updated success";
+                    obj['response'] = 'ID:'+ itemID + " updated success";
                     obj['ID'] = itemID;
                     resolve(obj);
                 } else {
@@ -401,7 +405,7 @@ function getUserGroups(username) {
                         userInGroup.push($(this).attr("Name") || "");
                     });
                     resolve(userInGroup);
-                }else{
+                } else {
                     reject([]); //获取权限失败
                 }
 
@@ -413,6 +417,6 @@ function getUserGroups(username) {
 /**
  * 对象克隆方法（深度克隆）
  */
-function cloneObj(obj){
+function cloneObj(obj) {
     return JSON.parse(JSON.stringify(obj))
 }
