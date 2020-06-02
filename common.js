@@ -198,7 +198,7 @@ function delListItemSync(listName, itemID) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = itemID + "deleted success";
+                obj['response'] = 'ID:' + itemID + " deleted success";
             } else {
                 obj['status'] = "error";
                 obj['response'] = xData.responseXML;
@@ -225,7 +225,7 @@ function delListItemAsync(listName, itemID) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = itemID + "deleted success";
+                    obj['response'] = 'ID:' + itemID + " deleted success";
                     resolve(obj);
                 } else {
                     var err = {};
@@ -266,7 +266,7 @@ function updateListItemSync(listName, itemID, data) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = itemID + "updated success";
+                obj['response'] = 'ID:'+ itemID + " updated success";
                 obj['ID'] = itemID;
             } else {
                 obj['status'] = "error";
@@ -275,6 +275,7 @@ function updateListItemSync(listName, itemID, data) {
             }
         }
     });
+    return obj;
 }
 
 /**
@@ -306,7 +307,7 @@ function updateListItemAsync(listName, itemID, data) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = itemID + "updated success";
+                    obj['response'] = 'ID:'+ itemID + " updated success";
                     obj['ID'] = itemID;
                     resolve(obj);
                 } else {
