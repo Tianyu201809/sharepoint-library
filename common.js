@@ -19,13 +19,13 @@
  */
 function getListDataSync(listName, query, arrayField) {
     var data = [];
-    if (!listName || !arguments[0]) {
+    if (!listName) {
         return "调用getListDataAsync时，请填写listName!"
     }
-    if (!arrayField || !arguments[2]) {
+    if (!arrayField) {
         return "调用getListDataAsync时，请输入查询字段列表['Title','ID'...]";
     }
-    if (!query || !arguments[1]) {
+    if (!query) {
         query = '<Query><Where></Where></Query>';
     }
 
@@ -33,7 +33,7 @@ function getListDataSync(listName, query, arrayField) {
     for (var k = 0; k < arrayField.length; k++) {
         _viewFields += "<FieldRef Name='" + arrayField[k] + "' />";
     }
-    _viewFields += "<ViewFields>";
+    _viewFields += "</ViewFields>";
     $().SPServices({
         operation: 'GetListItems',
         async: false,
@@ -42,13 +42,15 @@ function getListDataSync(listName, query, arrayField) {
         CAMLQuery: query,
         completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-
                 $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                    for (let j = 0; j < arrayField.length; j++) {
+                    for (var j = 0; j < arrayField.length; j++) {
+                        var key = String(arrayField[j]);
+                        data[i] ? data[i]:data[i] = {};
                         data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
                     }
                 });
             } else {
+                var err = {};
                 err['response'] = xData.responseXML;
                 err['status'] = "error";
                 data = [];
@@ -69,21 +71,23 @@ function getListDataSync(listName, query, arrayField) {
  */
 function getListDataAsync(listName, query, arrayField) {
     return new Promise(function (resolve, reject) {
-        if (!listName || !arguments[0]) {
-            reject("调用getListDataAsync时，请填写listName!")
+        if (!listName) {
+            reject("调用getListDataAsync时，请填写listName!");
+            return;
         }
-        if (!arrayField || !arguments[2]) {
+        if (!arrayField) {
             reject("调用getListDataAsync时，请输入查询字段列表['Title','ID'...]");
+            return;
         }
-        if (!query || !arguments[1]) {
+        if (!query) {
             query = '<Query><Where></Where></Query>';
-        }
+         }
 
         var _viewFields = "<ViewFields>";
         for (var k = 0; k < arrayField.length; k++) {
             _viewFields += "<FieldRef Name='" + arrayField[k] + "' />";
         }
-        _viewFields += "<ViewFields>";
+        _viewFields += "</ViewFields>";
         $().SPServices({
             operation: 'GetListItems',
             async: true,
@@ -94,8 +98,10 @@ function getListDataAsync(listName, query, arrayField) {
                 if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                     var data = [];
                     $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                        for (let j = 0; j < arrayField.length; j++) {
-                            data[i][arrayField[j]] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                        for (var j = 0; j < arrayField.length; j++) {
+                            var key = String(arrayField[j]);
+                            data[i] ? data[i]:data[i] = {};
+                            data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
                         }
                     });
                     resolve(data);
@@ -118,7 +124,7 @@ function getListDataAsync(listName, query, arrayField) {
 
 function insertDataIntoListSync(listName, data) {
     var itemID;
-    var obj;
+    var obj = {};
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
