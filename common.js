@@ -20,10 +20,10 @@
 function getListDataSync(listName, query, arrayField) {
     var data = [];
     if (!listName) {
-        return "调用getListDataAsync时，请填写listName!"
+        return false;
     }
     if (!arrayField) {
-        return "调用getListDataAsync时，请输入查询字段列表['Title','ID'...]";
+        return false;
     }
     if (!query) {
         query = '<Query><Where></Where></Query>';
@@ -72,11 +72,11 @@ function getListDataSync(listName, query, arrayField) {
 function getListDataAsync(listName, query, arrayField) {
     return new Promise(function (resolve, reject) {
         if (!listName) {
-            reject("调用getListDataAsync时，请填写listName!");
+            reject(false);
             return;
         }
         if (!arrayField) {
-            reject("调用getListDataAsync时，请输入查询字段列表['Title','ID'...]");
+            reject(false);
             return;
         }
         if (!query) {
@@ -125,6 +125,9 @@ function getListDataAsync(listName, query, arrayField) {
 function insertDataIntoListSync(listName, data) {
     var itemID;
     var obj = {};
+    if (!listName) {
+        return false;
+    }
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
@@ -189,6 +192,12 @@ function insertDataIntoListAsync(listName, data) {
 
 function delListItemSync(listName, itemID) {
     var obj = {};
+    if (!listName) {
+        return false;
+    }
+    if (!itemID) {
+        return false;
+    }
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
@@ -215,6 +224,12 @@ function delListItemSync(listName, itemID) {
  */
 function delListItemAsync(listName, itemID) {
     return new Promise(function (resolve, reject) {
+        if (!listName) {
+            reject(false);
+        }
+        if (!itemID) {
+            reject(false);
+        }
         $().SPServices({
             operation: 'UpdateListItems',
             async: true,
@@ -246,14 +261,14 @@ function delListItemAsync(listName, itemID) {
  */
 function updateListItemSync(listName, itemID, data) {
     if (!listName) {
-        return "Please input listname";
+        return false;
     }
     if (!itemID) {
-        return "Please input itemID";
+        return false;
     }
     for (var i = 0; i < data.length; i++) {
         if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
-            return "Please input data (Array format)";
+            return false;
         }
     }
     var obj = {};
@@ -266,7 +281,7 @@ function updateListItemSync(listName, itemID, data) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = 'ID:'+ itemID + " updated success";
+                obj['response'] = 'ID:' + itemID + " updated success";
                 obj['ID'] = itemID;
             } else {
                 obj['status'] = "error";
@@ -287,14 +302,14 @@ function updateListItemSync(listName, itemID, data) {
 function updateListItemAsync(listName, itemID, data) {
     return new Promise(function (resolve, reject) {
         if (!listName) {
-            return Promise.reject("Please input listname");
+            return Promise.reject(false);
         }
         if (!itemID) {
-            return Promise.reject("Please input itemID");
+            return Promise.reject(false);
         }
         for (var i = 0; i < data.length; i++) {
             if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
-                return Promise.reject("Please input data (Array format)");
+                return Promise.reject(false);
             }
         }
         $().SPServices({
@@ -307,7 +322,7 @@ function updateListItemAsync(listName, itemID, data) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = 'ID:'+ itemID + " updated success";
+                    obj['response'] = 'ID:' + itemID + " updated success";
                     obj['ID'] = itemID;
                     resolve(obj);
                 } else {
@@ -428,8 +443,8 @@ function cloneObj(obj) {
  * 如果传入参数不是数组，或者传入的数组中存在非数字的元素，返回NaN
  */
 function getMaxNumFromArray(arr) {
-    if(Object.prototype.toString.call(arr).indexOf('Array') === -1){
-       return NaN;
+    if (Object.prototype.toString.call(arr).indexOf('Array') === -1) {
+        return NaN;
     }
     return Math.max.apply(Math, arr);
-  }
+}
