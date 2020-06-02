@@ -252,7 +252,7 @@ function updateListItemSync(listName, itemID, data) {
         return "Please input itemID";
     }
     for (var i = 0; i < data.length; i++) {
-        if (Object.prototype.toString.call(data[i]).indexOf('Array') !== -1) {
+        if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
             return "Please input data (Array format)";
         }
     }
@@ -292,7 +292,7 @@ function updateListItemAsync(listName, itemID, data) {
             return Promise.reject("Please input itemID");
         }
         for (var i = 0; i < data.length; i++) {
-            if (Object.prototype.toString.call(data[i]).indexOf('Array') !== -1) {
+            if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
                 return Promise.reject("Please input data (Array format)");
             }
         }
