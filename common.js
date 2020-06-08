@@ -4,26 +4,26 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.0  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.2  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: Tianyu Zhang
- * 时间: 2020-06-01
+ * 时间: 2020-06-02
  */
 
 
 /**
  * 获取sharepoint list数据的同步函数
  * 注意填写arrayField参数时，list的显示字段和技术字段的名称要保持一致
- * @param {*string} listName 所查询列表的名称
+ * @param {*string} listName 所查询列表的名称  必填
  * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>"
- * @param {*array => ["Title","ID"...]} arrayField   所需要查询的字段，如果不填则查询所有字段 ["Title","ID"...]
+ * @param {*array => ["Title","ID"...]} arrayField    ["Title","ID"...]  必填
  */
 function getListDataSync(listName, query, arrayField) {
     var data = [];
     if (!listName) {
-        return "调用getListDataAsync时，请填写listName!"
+        return false;
     }
     if (!arrayField) {
-        return "调用getListDataAsync时，请输入查询字段列表['Title','ID'...]";
+        return false;
     }
     if (!query) {
         query = '<Query><Where></Where></Query>';
@@ -46,7 +46,7 @@ function getListDataSync(listName, query, arrayField) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
                         data[i] ? data[i] : data[i] = {};
-                        data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                        data[i][key] = $(this).attr("ows_" + key + "") || "";
                     }
                 });
             } else {
@@ -67,16 +67,16 @@ function getListDataSync(listName, query, arrayField) {
  * 注意填写arrayField参数时，list的显示字段和技术字段的名称要保持一致
  * @param {*string} listName 所查询列表的名称
  * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>"
- * @param {*array => ["Title","ID"...]} arrayField   所需要查询的字段，如果不填则查询所有字段 
+ * @param {*array => ["Title","ID"...]} arrayField  必填
  */
 function getListDataAsync(listName, query, arrayField) {
     return new Promise(function (resolve, reject) {
         if (!listName) {
-            reject("调用getListDataAsync时，请填写listName!");
+            reject(false);
             return;
         }
         if (!arrayField) {
-            reject("调用getListDataAsync时，请输入查询字段列表['Title','ID'...]");
+            reject(false);
             return;
         }
         if (!query) {
@@ -101,7 +101,7 @@ function getListDataAsync(listName, query, arrayField) {
                         for (var j = 0; j < arrayField.length; j++) {
                             var key = String(arrayField[j]);
                             data[i] ? data[i] : data[i] = {};
-                            data[i][key] = $(this).attr("ows_" + arrayField[j] + "") || "";
+                            data[i][key] = $(this).attr("ows_" + key + "") || "";
                         }
                     });
                     resolve(data);
@@ -125,6 +125,9 @@ function getListDataAsync(listName, query, arrayField) {
 function insertDataIntoListSync(listName, data) {
     var itemID;
     var obj = {};
+    if (!listName) {
+        return false;
+    }
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
@@ -189,6 +192,12 @@ function insertDataIntoListAsync(listName, data) {
 
 function delListItemSync(listName, itemID) {
     var obj = {};
+    if (!listName) {
+        return false;
+    }
+    if (!itemID) {
+        return false;
+    }
     $().SPServices({
         operation: 'UpdateListItems',
         async: false,
@@ -215,6 +224,12 @@ function delListItemSync(listName, itemID) {
  */
 function delListItemAsync(listName, itemID) {
     return new Promise(function (resolve, reject) {
+        if (!listName) {
+            reject(false);
+        }
+        if (!itemID) {
+            reject(false);
+        }
         $().SPServices({
             operation: 'UpdateListItems',
             async: true,
@@ -246,14 +261,14 @@ function delListItemAsync(listName, itemID) {
  */
 function updateListItemSync(listName, itemID, data) {
     if (!listName) {
-        return "Please input listname";
+        return false;
     }
     if (!itemID) {
-        return "Please input itemID";
+        return false;
     }
     for (var i = 0; i < data.length; i++) {
         if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
-            return "Please input data (Array format)";
+            return false;
         }
     }
     var obj = {};
@@ -266,7 +281,7 @@ function updateListItemSync(listName, itemID, data) {
         completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
-                obj['response'] = 'ID:'+ itemID + " updated success";
+                obj['response'] = 'ID:' + itemID + " updated success";
                 obj['ID'] = itemID;
             } else {
                 obj['status'] = "error";
@@ -287,14 +302,14 @@ function updateListItemSync(listName, itemID, data) {
 function updateListItemAsync(listName, itemID, data) {
     return new Promise(function (resolve, reject) {
         if (!listName) {
-            return Promise.reject("Please input listname");
+            return Promise.reject(false);
         }
         if (!itemID) {
-            return Promise.reject("Please input itemID");
+            return Promise.reject(false);
         }
         for (var i = 0; i < data.length; i++) {
             if (Object.prototype.toString.call(data[i]).indexOf('Array') === -1) {
-                return Promise.reject("Please input data (Array format)");
+                return Promise.reject(false);
             }
         }
         $().SPServices({
@@ -307,7 +322,7 @@ function updateListItemAsync(listName, itemID, data) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
-                    obj['response'] = 'ID:'+ itemID + " updated success";
+                    obj['response'] = 'ID:' + itemID + " updated success";
                     obj['ID'] = itemID;
                     resolve(obj);
                 } else {
@@ -386,12 +401,36 @@ function getUrlVars() {
 }
 
 /**
+ * 获取用户所包含的Group，同步函数，返回数组
+ * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
+ * 不填写用户参数，则默认为当前用户
+ */
+
+function getUserGroupsSync(username) {
+    username ? username : username = $().SPServices.SPGetCurrentUser();
+    var userInGroup = [];
+    $().SPServices({
+        operation: "GetGroupCollectionFromUser",
+        userLoginName: username,
+        async: false,
+        completefunc: function (xData, Status) {
+            if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
+                $(xData.responseXML).SPFilterNode("Group").each(function () {
+                    userInGroup.push($(this).attr("Name") || "");
+                });
+            }
+        }
+    });
+    return userInGroup;
+}
+
+/**
  * 获取用户所包含的Group，异步函数，返回一个Promise对象
  * 刚函数输出一个数组array， 数组中包含所查询用户在当前站点下的Group权限组
  * 不填写用户参数，则默认为当前用户
  */
-//获取用户权限
-function getUserGroups(username) {
+
+function getUserGroupsAsync(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
     return new Promise(function (resolve, reject) {
         var userInGroup = [];
@@ -419,4 +458,15 @@ function getUserGroups(username) {
  */
 function cloneObj(obj) {
     return JSON.parse(JSON.stringify(obj))
+}
+
+/**
+ * 获取数组中最大的数据
+ * 如果传入参数不是数组，或者传入的数组中存在非数字的元素，返回NaN
+ */
+function getMaxNumFromArray(arr) {
+    if (Object.prototype.toString.call(arr).indexOf('Array') === -1) {
+        return NaN;
+    }
+    return Math.max.apply(Math, arr);
 }
