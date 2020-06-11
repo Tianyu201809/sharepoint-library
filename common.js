@@ -179,7 +179,7 @@ function insertDataIntoListAsync(listName, data) {
                     var err = {};
                     err['ID'] = undefined;
                     err['response'] = xData.responseXML;
-                    obj['status'] = "error";
+                    err['status'] = "error";
                     reject(err);
                 }
             }
