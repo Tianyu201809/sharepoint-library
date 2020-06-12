@@ -179,7 +179,7 @@ function insertDataIntoListAsync(listName, data) {
                     var err = {};
                     err['ID'] = undefined;
                     err['response'] = xData.responseXML;
-                    err['status'] = "error";
+                    obj['status'] = "error";
                     reject(err);
                 }
             }
@@ -453,7 +453,6 @@ function getUserGroupsAsync(username) {
 
     })
 }
-
 /**
  * 对象克隆方法（深度克隆）
  */
@@ -471,3 +470,149 @@ function getMaxNumFromArray(arr) {
     }
     return Math.max.apply(Math, arr);
 }
+
+
+/**
+ * 
+ * @param {*} listname 列表名称（必填）
+ * @param {*} itemdata 所添加的数据集合（必填）（*不要含ID属性）
+ * itemdata参数实例[[['Title','12345'],['Status','Submitted']],[['Title','23456'],['Status','Submitted']]]
+ * 使用方法:
+ * 将多个添加参数，放入一个数组中，直接传递给该方法
+ * 该方法进行遍历数据，并逐条添加，添加完成之后，将添加结果返回
+ * 若存在添加失败的数据（由于参数传入错误），则这条数据的索引，和状态会被返回，且不影响其他数据的添加
+ * 添加成功的数据，会返回状态，id，索引三个参数
+ */
+
+function insertItemsIntoListAsync(listname, itemdata) {
+    return new Promise(function (resolve, reject) {
+        var createdDataIDList = [];
+        try {
+            if (!listname) {
+                var err = {};
+                err.status = 'error';
+                err.response = 'List name is invaild.'
+                err.ID = null;
+                err.index = null;
+                reject(err);
+                return;
+            }
+            if (itemdata.length == 0) {
+                var obj = {};
+                obj.status = 'success';
+                obj.ID = null;
+                obj.index = null;
+                obj.response = '没有传入要添加的数据';
+                resolve(obj);
+                return;
+            }
+            (function loop(index) {
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    batchCmd: 'New',
+                    listName: listname,
+                    valuepairs: itemdata[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
+                            var obj = {};
+                            obj.ID = itemID;
+                            obj.index = index;
+                            obj.status = 'success';
+                            obj.response = '所添加的第' + index + '条数据添加成功';
+                            createdDataIDList.push(itemID);
+                            if (index < itemdata.length - 1) {
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                resolve(createdDataIDList);
+                            }
+                        } else {
+                            var err = {};
+                            err.status = 'error';
+                            err.response = '所添加的第' + index + '条数据添加失败';
+                            err.index = index;
+                            err.ID = null;
+                            createdDataIDList.push(err);
+                            if (index < itemdata.length - 1) {
+                                index = index + 1;
+                                loop(index);
+                            } else {
+                                resolve(createdDataIDList)
+                            }
+                        }
+                    }
+                });
+            }(0))
+        } catch (error) {
+            console.log(error);
+            reject(error);
+        }
+    })
+}
+
+/**
+ * 删除多条数据，异步方法
+ * @param {必填} listname 需要删除数据的list名
+ * @param {必填} itemIDArrayList 需要删除的id数组集合 [1,2,3,4...]
+ * 使用方法:第一个参数传递list名称， 第二个参数传递需要删除的id数组
+ * 删除成功之后，promise对象中将返回所有被删除成功的数据的id号（不包括删除失败的数据）
+ * 控制台中会打印出没有删除成功数据的id号
+ */
+function deleteItemsInListAsync(listname, itemIDArrayList) {
+    return new Promise(function (resolve, reject) {
+        var deletedItemsIDList = [];
+        try {
+            if (itemIDArrayList.length == 0) {
+                var obj = {};
+                obj.status = 'success';
+                obj.response = '没有数据被删除';
+                resolve(obj);
+                return;
+            }
+            (function loop(index) {
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    batchCmd: 'Delete', //New, Update, Delete, Moderate
+                    listName: listname,
+                    ID: itemIDArrayList[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            var obj = {};
+                            var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
+                            obj.status = 'success';
+                            obj.option = 'delete';
+                            obj.ID = itemID;
+                            deletedItemsIDList.push(obj);
+                            if (index < itemIDArrayList.length - 1) {
+                                console.log(index);
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                resolve(deletedItemsIDList);
+                            }
+                        } else {
+                            //如果有没有被删除的数据，则不影响其他数据的删除
+                            console.log('id为' + itemIDArrayList[index] + '的数据删除失败');
+                            if (index < itemIDArrayList.length - 1) {
+                                console.log(index);
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                resolve(deletedItemsIDList);
+                            }
+                        }
+                    }
+                });
+            })(0)
+        } catch (error) {
+            console.log(error);
+            reject(error)
+        }
+    })
+}
+
+
+
