@@ -107,9 +107,11 @@ function getListDataAsync(listName, query, arrayField) {
                     resolve(data);
                 } else {
                     var err = {};
+                    var errorArray = [];
                     err['response'] = xData.responseXML;
                     err['status'] = "error";
-                    reject(err);
+                    errorArray.push(err);
+                    resolve(errorArray);
                 }
             }
         });
