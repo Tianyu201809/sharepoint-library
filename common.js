@@ -562,58 +562,58 @@ function insertItemsIntoListAsync(listname, itemdata) {
  * 删除成功之后，promise对象中将返回所有被删除成功的数据的id号（不包括删除失败的数据）
  * 控制台中会打印出没有删除成功数据的id号
  */
-function deleteItemsInListAsync(listname, itemIDArrayList) {
+function deleteItemsInListAsync(listname, array) {
     return new Promise(function (resolve, reject) {
-        var deletedItemsIDList = [];
-        try {
-            if (itemIDArrayList.length == 0) {
-                var obj = {};
-                obj.status = 'success';
-                obj.response = '没有数据被删除';
-                resolve(obj);
-                return;
-            }
-            (function loop(index) {
-                $().SPServices({
-                    operation: 'UpdateListItems',
-                    async: true,
-                    batchCmd: 'Delete', //New, Update, Delete, Moderate
-                    listName: listname,
-                    ID: itemIDArrayList[index],
-                    completefunc: function (xData, Status) {
-                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
-                            var obj = {};
-                            var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
-                            obj.status = 'success';
-                            obj.option = 'delete';
-                            obj.ID = itemID;
-                            deletedItemsIDList.push(obj);
-                            if (index < itemIDArrayList.length - 1) {
-                                console.log(index);
-                                index = index + 1;
-                                loop(index)
+        var _array = [];
+        for (var i = 0; i < array.length; i++) {
+            (function (index) {
+                _array[index] = new Promise(function (resolve, reject) {
+                    $().SPServices({
+                        operation: 'UpdateListItems',
+                        async: true,
+                        batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
+                        listName: listname,
+                        ID: array[index],
+                        completefunc: function (xData, Status) {
+                            if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                                var obj = {};
+                                var itemID = array[index];
+                                obj['status'] = "success";
+                                obj['response'] = 'ID:' + itemID + " deleted success";
+                                obj['ID'] = itemID;
+                                resolve(obj);
                             } else {
-                                resolve(deletedItemsIDList);
-                            }
-                        } else {
-                            //如果有没有被删除的数据，则不影响其他数据的删除
-                            console.log('id为' + itemIDArrayList[index] + '的数据删除失败');
-                            if (index < itemIDArrayList.length - 1) {
-                                console.log(index);
-                                index = index + 1;
-                                loop(index)
-                            } else {
-                                resolve(deletedItemsIDList);
+                                var err = {};
+                                err['status'] = "error";
+                                err['response'] = xData.responseXML;
+                                err['ID'] = array[index];
+                                reject(err);
                             }
                         }
-                    }
-                });
-            })(0)
-        } catch (error) {
-            console.log(error);
-            reject(error)
+                    });
+
+                })
+            })(i)
         }
+        Promise.all(_array.map(function (p) {
+            return p.catch(function (e) {
+                return e;
+            })
+        }))
+            .then(function (result) {
+                console.log(result);
+                console.log('delete data success');
+                resolve(true);
+                return;
+            })
+            .catch(function (err) {
+                console.log(err);
+                console.log('delete data error');
+                resolve(false);
+                return;
+            })
     })
+
 }
 
 
