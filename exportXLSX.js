@@ -6,7 +6,7 @@
  * 
  * 使用方法:直接调用export2Excel(array,filename)方法
  * array是需要显示的数据的数组集合，array[0]是“标题”， array[1]~array[n]是具体的数据
- * array参数示例 => [["Title","Name","Age"],["title1","Bob",12],["title2","Pater",18],...]
+ * array参数示例 => [["标题","姓名","年龄""],["title1","Bob",12],["title2","Pater",18],...]
  * 本方法兼容IE浏览器和其他主流浏览器
  */
 
