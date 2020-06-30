@@ -474,7 +474,7 @@ function getMaxNumFromArray(arr) {
 
 Date.prototype.Format = function (formatStr) {
     var str = formatStr;
-    var Week = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+    var Week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
     str = str.replace(/yyyy|YYYY/, this.getFullYear());
     str = str.replace(/yy|YY/, (this.getYear() % 100) > 9 ? (this.getYear() % 100).toString() : '0' + (this.getYear() % 100));
