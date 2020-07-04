@@ -25,22 +25,21 @@ function _readFile(file) {
  * 
  * _keyMap示例：（如：name对应excel文件中的姓名列，phone对应excel文件中的电话列）
  * 
- * {
- *  name:{
- *   text:"姓名",
- *   type:'string'
- * },
- * phone:{
- *  text:"电话",
- *  type:"string"
- * }
- * 
- * }
+        // {
+        //  name:{
+        //   text:"姓名",
+        //   type:'string'
+        // },
+        // phone:{
+        //  text:"电话",
+        //  type:"string"
+        // }
+        // }
  * 
  * 
  */
 
-function displayXLSXData(file, _keyMapRule) {
+function Excle2Json(file, _keyMapRule) {
     return new Promise(function(resolve, reject) {
         _readFile(file).then(function(data) {
             if (window.XLSX) {
