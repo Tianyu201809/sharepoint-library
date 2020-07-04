@@ -44,7 +44,7 @@ function displayXLSXData(file, _keyMapRule) {
     return new Promise(function(resolve, reject) {
         _readFile(file).then(function(data) {
             var workbook = xlsx.read(data, { type: 'binary' }),
-                worksheet = wookbook.Sheet[workbook.SheetNames[0]];
+                worksheet = workbook.Sheets[workbook.SheetNames[0]];
             //此时获取到的数据是data是原生的数据，如果excel是中文的话，我们转换出来的json数据的属性名也是中文，所以需要将其属性名转化为英文
             data = xlsx.utils.sheet_to_json(worksheet);
             //转化属性名
