@@ -43,7 +43,12 @@ function _readFile(file) {
 function displayXLSXData(file, _keyMapRule) {
     return new Promise(function(resolve, reject) {
         _readFile(file).then(function(data) {
-            var workbook = xlsx.read(data, { type: 'binary' }),
+            if (window.XLSX) {
+                var xlsx = window.XLSX;
+            } else {
+                reject("没有引入xlsx类库，请到官网下载并引入:https://github.com/SheetJS/sheetjs/blob/master/dist/xlsx.core.min.js")
+            }
+            var workbook = xlsx.read(data, { type: 'buffer' }),
                 worksheet = workbook.Sheets[workbook.SheetNames[0]];
             //此时获取到的数据是data是原生的数据，如果excel是中文的话，我们转换出来的json数据的属性名也是中文，所以需要将其属性名转化为英文
             data = xlsx.utils.sheet_to_json(worksheet);
