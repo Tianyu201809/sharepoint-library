@@ -11,7 +11,7 @@
 function _readFile(file) {
     return new Promise(function(resolve) {
         var reader = new FileReader();
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
         reader.onload = function(ev) {
             resolve(ev.target.result)
         }
