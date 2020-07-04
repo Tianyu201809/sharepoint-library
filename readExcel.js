@@ -71,8 +71,8 @@ function displayXLSXData(file, _keyMapRule) {
                         type === "string" ? (v = String(v)) : null;
                         type === "number" ? (v = Number(v)) : null;
                         obj[key] = v;
-                        arr.push(obj);
                     }
+                    arr.push(obj);
                 });
                 resolve(arr);
             }
