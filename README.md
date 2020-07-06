@@ -6,12 +6,12 @@ common.js封装了对于SharePoint列表的CRUD操作（包含同步和异步两
 ------------------------------------------------------------------------------
 2020-06-02
 lib 文件夹是平时开发中所用到的一些类库
-jquery-3.1.0.min.js
-jquery-ui.js
-jquery.SPServices.min.js
-kendo.all.min.js
-moment.js
-xlsx.core.min.js
+* jquery-3.1.0.min.js
+* jquery-ui.js
+* jquery.SPServices.min.js
+* kendo.all.min.js
+* moment.js
+* xlsx.core.min.js
 ------------------------------------------------------------------------------
 2020-7-3新增读取excel文件数据的方法readExcel.js
 使用方法：
