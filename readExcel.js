@@ -2,6 +2,10 @@
  * 读取excel文件插件
  * 前提条件：引入xlsx类库文件：github说明网址：https://github.com/SheetJS/sheetjs/blob/master/README.md
  * 仅需引入 dist/xlsx.core.min.js
+ * 
+ * 使用方法：
+ * 调用Excle2Json(file, _keyMapRule, sheetName)方法
+ * file是从前端获取到的所上传的文件：var file = document.getElementById("file").files[0];
  */
 
 /**
@@ -47,9 +51,9 @@ function Excle2Json(file, _keyMapRule, sheetName) {
             } else {
                 reject("没有引入js-xlsx库，请到官网下载并引入:https://github.com/SheetJS/sheetjs/blob/master/dist/xlsx.core.min.js")
             }
-            var workbook = xlsx.read(data, { type: 'buffer' }),
-                sheetName = sheetName ? sheetName : workbook.SheetNames[0];
-            worksheet = workbook.Sheets[sheetName]; //默认读取第一个sheet页的数据
+            var workbook = xlsx.read(data, { type: 'buffer' });
+            sheetName = sheetName ? sheetName : workbook.SheetNames[0]; //默认读取第一个sheet页的数据
+            worksheet = workbook.Sheets[sheetName];
             //此时获取到的数据是data是原生的数据，如果excel是中文的话，我们转换出来的json数据的属性名也是中文，所以需要将其属性名转化为英文
             data = xlsx.utils.sheet_to_json(worksheet);
             //转化属性名
