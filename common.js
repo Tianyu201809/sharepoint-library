@@ -40,9 +40,9 @@ function getListDataSync(listName, query, arrayField) {
         listName: listName,
         CAMLViewFields: _viewFields,
         CAMLQuery: query,
-        completefunc: function (xData, Status) {
+        completefunc: function(xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
                         data[i] ? data[i] : data[i] = {};
@@ -70,7 +70,7 @@ function getListDataSync(listName, query, arrayField) {
  * @param {*array => ["Title","ID"...]} arrayField  必填
  */
 function getListDataAsync(listName, query, arrayField) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         if (!listName) {
             reject(false);
             return;
@@ -94,10 +94,10 @@ function getListDataAsync(listName, query, arrayField) {
             listName: listName,
             CAMLViewFields: _viewFields,
             CAMLQuery: query,
-            completefunc: function (xData, Status) {
+            completefunc: function(xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                     var data = [];
-                    $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                    $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
                         for (var j = 0; j < arrayField.length; j++) {
                             var key = String(arrayField[j]);
                             data[i] ? data[i] : data[i] = {};
@@ -134,7 +134,7 @@ function insertDataIntoListSync(listName, data) {
         batchCmd: 'New',
         listName: listName,
         valuepairs: data,
-        completefunc: function (xData, Status) {
+        completefunc: function(xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
                 obj['ID'] = itemID;
@@ -157,7 +157,7 @@ function insertDataIntoListSync(listName, data) {
  * @param {*string} data  所添加的数据  必填参数 eg :[['Title',"hello"],['field1','test',],...]
  */
 function insertDataIntoListAsync(listName, data) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         if (!listName) {
             return Promise.reject();
         }
@@ -167,7 +167,7 @@ function insertDataIntoListAsync(listName, data) {
             batchCmd: 'New',
             listName: listName,
             valuepairs: data,
-            completefunc: function (xData, Status) {
+            completefunc: function(xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
@@ -204,7 +204,7 @@ function delListItemSync(listName, itemID) {
         batchCmd: 'Delete', //New, Update, Delete, Moderate
         listName: listName,
         ID: itemID, //
-        completefunc: function (xData, Status) {
+        completefunc: function(xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " deleted success";
@@ -223,7 +223,7 @@ function delListItemSync(listName, itemID) {
  * @param {*string} itemID  SP List item ID值
  */
 function delListItemAsync(listName, itemID) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         if (!listName) {
             reject(false);
         }
@@ -236,7 +236,7 @@ function delListItemAsync(listName, itemID) {
             batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
             listName: listName,
             ID: itemID,
-            completefunc: function (xData, Status) {
+            completefunc: function(xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -278,7 +278,7 @@ function updateListItemSync(listName, itemID, data) {
         listName: listName,
         ID: itemID,
         valuepairs: data,
-        completefunc: function (xData, Status) {
+        completefunc: function(xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " updated success";
@@ -300,7 +300,7 @@ function updateListItemSync(listName, itemID, data) {
  * @param {*array => [['Title','123'],['field1','123'],['field2','123']...]} 必填
  */
 function updateListItemAsync(listName, itemID, data) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         if (!listName) {
             return Promise.reject(false);
         }
@@ -318,7 +318,7 @@ function updateListItemAsync(listName, itemID, data) {
             listName: listName,
             ID: itemID,
             valuepairs: data,
-            completefunc: function (xData, Status) {
+            completefunc: function(xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -346,15 +346,15 @@ function updateListItemAsync(listName, itemID, data) {
  * var time1 = new Date().format("yyyy-MM-dd HH:mm:ss");     
  * var time2 = new Date().format("yyyy-MM-dd");  
  */
-Date.prototype.format = function (fmt) { //author: meizz   
+Date.prototype.format = function(fmt) { //author: meizz   
     var o = {
-        "M+": this.getMonth() + 1,               //月份   
-        "d+": this.getDate(),                    //日   
-        "h+": this.getHours(),                   //小时   
-        "m+": this.getMinutes(),                 //分   
-        "s+": this.getSeconds(),                 //秒   
+        "M+": this.getMonth() + 1, //月份   
+        "d+": this.getDate(), //日   
+        "h+": this.getHours(), //小时   
+        "m+": this.getMinutes(), //分   
+        "s+": this.getSeconds(), //秒   
         "q+": Math.floor((this.getMonth() + 3) / 3), //季度   
-        "S": this.getMilliseconds()             //毫秒   
+        "S": this.getMilliseconds() //毫秒   
     };
     if (/(y+)/.test(fmt))
         fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
@@ -384,12 +384,12 @@ function ConvertDateISO(dateVal) {
  */
 function getUrlVars() {
     var curParams = document.location.search;
-    var vars = [], hash;
+    var vars = [],
+        hash;
     var hashes;
     if (curParams.split('?').length > 2) {
         hashes = curParams.substring(curParams.lastIndexOf('?') + 1).split('&');
-    }
-    else {
+    } else {
         hashes = curParams.substr(1).split('&');
     }
     for (var i = 0; i < hashes.length; i++) {
@@ -413,9 +413,9 @@ function getUserGroupsSync(username) {
         operation: "GetGroupCollectionFromUser",
         userLoginName: username,
         async: false,
-        completefunc: function (xData, Status) {
+        completefunc: function(xData, Status) {
             if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                $(xData.responseXML).SPFilterNode("Group").each(function () {
+                $(xData.responseXML).SPFilterNode("Group").each(function() {
                     userInGroup.push($(this).attr("Name") || "");
                 });
             }
@@ -432,15 +432,15 @@ function getUserGroupsSync(username) {
 
 function getUserGroupsAsync(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         var userInGroup = [];
         $().SPServices({
             operation: "GetGroupCollectionFromUser",
             userLoginName: username,
             async: true,
-            completefunc: function (xData, Status) {
+            completefunc: function(xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                    $(xData.responseXML).SPFilterNode("Group").each(function () {
+                    $(xData.responseXML).SPFilterNode("Group").each(function() {
                         userInGroup.push($(this).attr("Name") || "");
                     });
                     resolve(userInGroup);
@@ -472,7 +472,7 @@ function getMaxNumFromArray(arr) {
     return Math.max.apply(Math, arr);
 }
 
-Date.prototype.Format = function (formatStr) {
+Date.prototype.Format = function(formatStr) {
     var str = formatStr;
     var Week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -519,126 +519,73 @@ function GenerateNumber() {
 /*
 
 function deleteItemsInListAsync(listname, itemIDArrayList) {
-
    return new Promise(function (resolve, reject) {
-
        var deletedItemsIDList = [];
-
        try {
-
            if (itemIDArrayList.length == 0) {
-
                var obj = {};
-
                obj.status = 'success';
-
                obj.response = '没有数据被删除';
-
                resolve(obj);
-
                return;
-
            }
-
            (function loop(index) {
-
                $().SPServices({
-
                    operation: 'UpdateListItems',
-
                    async: true,
-
                    batchCmd: 'Delete', //New, Update, Delete, Moderate
-
                    listName: listname,
-
                    ID: itemIDArrayList[index],
-
                    completefunc: function (xData, Status) {
-
                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
-
                            var obj = {};
-
                            var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
-
                            obj.status = 'success';
-
                            obj.option = 'delete';
-
                            obj.ID = itemID;
-
                            deletedItemsIDList.push(obj);
-
                            if (index < itemIDArrayList.length - 1) {
-
                                console.log(index);
-
                                index = index + 1;
-
                                loop(index)
-
                            } else {
-
                                resolve(deletedItemsIDList);
-
                            }
-
                        } else {
-
                            //如果有没有被删除的数据，则不影响其他数据的删除
-
                            console.log('id为' + itemIDArrayList[index] + '的数据删除失败');
-
                            if (index < itemIDArrayList.length - 1) {
-
                                console.log(index);
-
                                index = index + 1;
-
                                loop(index)
-
                            } else {
-
                                resolve(deletedItemsIDList);
-
                            }
-
                        }
-
                    }
-
                });
-
            })(0)
-
        } catch (error) {
-
            console.log(error);
-
            reject(error)
-
        }
-
    })
-
 }
-
 */
 
 function deleteItemsInListAsync(listname, array) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         var _array = [];
         for (var i = 0; i < array.length; i++) {
-            (function (index) {
-                _array[index] = new Promise(function (resolve, reject) {
+            (function(index) {
+                _array[index] = new Promise(function(resolve, reject) {
                     $().SPServices({
                         operation: 'UpdateListItems',
                         async: true,
                         batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
                         listName: listname,
                         ID: array[index],
-                        completefunc: function (xData, Status) {
+                        completefunc: function(xData, Status) {
                             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                                 var obj = {};
                                 var itemID = array[index];
@@ -659,17 +606,17 @@ function deleteItemsInListAsync(listname, array) {
                 })
             })(i)
         }
-        Promise.all(_array.map(function (p) {
-            return p.catch(function (e) {
-                return e;
-            })
-        }))
-            .then(function (result) {
+        Promise.all(_array.map(function(p) {
+                return p.catch(function(e) {
+                    return e;
+                })
+            }))
+            .then(function(result) {
                 console.log(result);
                 console.log('delete data success');
                 resolve(true);
             })
-            .catch(function (err) {
+            .catch(function(err) {
                 console.log(err);
                 console.log('delete data error');
                 resolve(false);

@@ -12,6 +12,8 @@ lib 文件夹是平时开发中所用到的一些类库
 * kendo.all.min.js
 * moment.js
 * xlsx.core.min.js
+* promise.js
+* vue.min.js
 ------------------------------------------------------------------------------
 2020-7-3新增读取excel文件数据的方法readExcel.js
 使用方法：
