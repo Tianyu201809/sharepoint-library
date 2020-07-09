@@ -642,26 +642,3 @@ function isInclude(value, array) {
         return false;
     }
 }
-
-/**
- * 对执行函数进行节流处理
- * 作用:限制一个函数在一定时间内只能执行一次
- * @param {*回调函数的函数名} fn
- * @param {*设置的延迟运行时间(毫秒)} wait
- * 
- * 使用方法：1.第一个参数是需要被节流处理的函数名称
- *          2.第二个参数是延时时间
- */
-function _throttle(fn, wait) {
-    var timer = null;
-    return function() {
-        var context = this;
-        var args = arguments;
-        if (!timer) {
-            timer = setTimeout(function() {
-                fn.apply(content, args);
-                timer = null;
-            }, wait);
-        }
-    }
-}
