@@ -74,13 +74,13 @@ function _typeof(obj) {
 function splicingQueryStr(config, order) {
     if (_typeof(config) !== 'object') return;
     var _query;
-    var camlTemplate = "<Query><Where>###query</Where></Query>";
+    var camlTemplate = "<Query><Where>###query###</Where></Query>";
     var len = config.length;
     if (len === 1) {
         //如果只有一个过滤条件
         debugger;
         _query = _analysisOption(config[0]);
-        _query = camlTemplate.replace('###query', _query);
+        _query = camlTemplate.replace('###query###', _query);
     } else if (len === 2) {
         //如果有两个过滤条件
         var queryArr = [];
@@ -93,27 +93,27 @@ function splicingQueryStr(config, order) {
         for (var m = 0; m < queryArr.length; m++) {
             tempQuery += queryArr[m];
         }
-        _query = camlTemplate.replace('###query', '<And>' + tempQuery + '</And>');
+        _query = camlTemplate.replace('###query###', '<And>' + tempQuery + '</And>');
     } else if (len >= 3) {
         //三个以上过滤条件
         debugger;
         var _queryTemp = [];
-        var camlTemplate = "<Query><Where>###query</Where></Query>";
+        var camlTemplate = "<Query><Where>###query###</Where></Query>";
 
         for (var i = 0; i < config.length; i++) {
             _queryTemp.push(_analysisOption(config[i]));
         }
         //首先将前两个过滤条件进行拼接
-        var _queryPart = '<And>' + _queryTemp[0] + _queryTemp[1] + '</And>' + '###query'; //此处的###query是为了给后面的条件进行占位
-        var _query = camlTemplate.replace('###query', _queryPart); //接下来按照规律进行And拼接
+        var _queryPart = '<And>' + _queryTemp[0] + _queryTemp[1] + '</And>' + '###query###'; //此处的###query###是为了给后面的条件进行占位
+        var _query = camlTemplate.replace('###query###', _queryPart); //接下来按照规律进行And拼接
         var _tempQuery, _tempQuery2;
         for (var n = 2; n < config.length; n++) {
             var queryFilter = _analysisOption(config[n]); //获取过滤条件
             _tempQuery = _query.replace('<Where>', '<Where><And>');
-            _tempQuery2 = _tempQuery.replace('###query', queryFilter + '</And>' + '###query');
+            _tempQuery2 = _tempQuery.replace('###query###', queryFilter + '</And>' + '###query###');
             _query = _tempQuery2;
         }
-        _query = _tempQuery2.replace(/###query/g, ''); //将最后多余的占位符###query删除掉
+        _query = _tempQuery2.replace(/###query###/g, ''); //将最后多余的占位符###query###删除掉
     }
     if (order) {
         //<OrderBy><FieldRef Name='ID' Ascending='FALSE'/></OrderBy>
@@ -174,12 +174,12 @@ function _analysisOption(obj) {
         case 'In':
             //In条件在一定的范围内检索数据
             //需要在输入参数中添加areaData属性
-            var _queryTemp = "<Values>###query</Values>";
+            var _queryTemp = "<Values>###query###</Values>";
             var _queryValue = '';
             for (var i = 0; i < obj.areaData.length; i++) {
                 _queryValue += "<Value Type='" + obj.areaData[i].type + "'>" + obj.areaData[i].value + "</Value>";
             }
-            _query = _queryTemp.replace('###query', _queryValue);
+            _query = _queryTemp.replace('###query###', _queryValue);
             break;
         case 'IsNull':
             _query += "<IsNull><FieldRef Name='" + obj.field + "' /><Value Type='" + obj.fieldType + "'>" + obj.value + "</Value></IsNull>";
