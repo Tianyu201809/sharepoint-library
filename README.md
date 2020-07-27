@@ -33,10 +33,12 @@ lib 文件夹是平时开发中所用到的一些类库
          }
         }·
 -----------------------------------------------------------------------------
-2020-7-27新增防抖与节流工具方法，新增生成caml查询字符串方法splicingQueryStr
-* 使用说明：
-* 为splicingQueryStr函数传递两个参数，config和order
+2020-7-27 
+* 新增防抖与节流工具函数,位于文件debounce.js中
+* 新增生成caml查询字符串函数generateQueryStr，位于SPfilter-ES5.js文件中
 
+* 使用说明：
+* 为generateQueryStr函数传递两个参数，config和order
 * 参数示例：
 var config = [{
     field: 'ID', //需要查询的字段
@@ -69,4 +71,4 @@ var order = {
     ascending: 'TRUE' //取值为'FLASE'或'TRUE'
 }
 
-* splicingQueryStr(config, order)
+* generateQueryStr(config, order)
