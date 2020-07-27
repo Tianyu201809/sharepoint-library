@@ -16,18 +16,33 @@ function _typeof(obj) {
     return _typeof(obj);
 }
 
+
+/**
+ * 使用说明：
+ * SharePoint通用过滤方法
+ * CAML语句拼接
+ * 返回一个拼接成功的caml查询语句
+ * 目前仅支持And关键字连接所有条件
+ */
+
 /**
  * 
- * 参数说明：
+ * @param {Array} config 查询条件对象数组 
+ * @param {Object} order  排序对象
+ */
+
+/**
+ * 
+ * 参数详细说明：
  * config：过滤条件数组对象集合
  * order:排序对象
  * 
  */
 
 // var config = [{
-//     field: 'ID', //需要查询的字段
-//     fieldType: 'Text', //所查询的字段类型
-//     option: 'Eq', //过滤条件
+//     field: 'ID', //需要查询的字段 （SharePoint List中的字段名称）
+//     fieldType: 'Text', //所查询的字段类型（与SharePoint中的Value中的Type属性一致）
+//     option: 'Eq', //过滤条件（SharePoint操作符）
 //     value: '123', //字段的值
 //     areaData: [{
 //             type: 'Integer',
@@ -56,20 +71,6 @@ function _typeof(obj) {
 // }
 
 
-
-/**
- * 方法使用说明：
- * SharePoint通用过滤方法
- * CAML语句拼接
- * 返回一个拼接成功的caml查询语句
- * 目前仅支持And关键字连接所有条件
- */
-
-/**
- * 
- * @param {Array} config 查询条件对象数组 
- * @param {Object} order  排序对象
- */
 function splicingQueryStr(config, order) {
     if (_typeof(config) !== 'object') return;
     var _query;
