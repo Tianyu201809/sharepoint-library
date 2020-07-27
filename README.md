@@ -34,3 +34,41 @@ lib 文件夹是平时开发中所用到的一些类库
         }·
 -----------------------------------------------------------------------------
 2020-7-27新增防抖与节流工具方法
+-----------------------------------------------------------------------------
+2020-7-27新增生成caml查询字符串方法splicingQueryStr
+* 使用说明：
+* 为splicingQueryStr函数传递两个参数，config和order
+
+* 参数示例：
+var config = [{
+    field: 'ID', //需要查询的字段
+    fieldType: 'Text', //所查询的字段类型
+    option: 'Eq', //过滤条件
+    value: '123', //字段的值
+    areaData: [{
+            type: 'Integer',
+            value: 123
+        }, {
+            type: 'Text',
+            value: '12'
+        }] //当option为In时，需要填写该参数
+}, {
+    field: 'ID', //需要查询的字段
+    fieldType: 'Text', //所查询的字段类型
+    option: 'In', //过滤条件
+    value: '123', //字段的值
+    areaData: [{
+            type: 'Integer',
+            value: 123
+        }, {
+            type: 'Text',
+            value: '12'
+        }] //当option为In时，需要填写该参数, 该参数为数组对象
+}];
+
+var order = {
+    field: 'ID',
+    ascending: 'TRUE' //取值为'FLASE'或'TRUE'
+}
+
+* splicingQueryStr(config, order)
