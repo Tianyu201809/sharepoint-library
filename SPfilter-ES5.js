@@ -71,7 +71,7 @@ function _typeof(obj) {
 // }
 
 
-function splicingQueryStr(config, order) {
+function generateQueryStr(config, order) {
     if (_typeof(config) !== 'object') return;
     var _query;
     var camlTemplate = "<Query><Where>###query###</Where></Query>";
