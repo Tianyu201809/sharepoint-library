@@ -4,20 +4,21 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.2  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.3  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: Tianyu Zhang
- * 时间: 2020-06-02
+ * 时间: 2020-07-28
  */
 
 
 /**
  * 获取sharepoint list数据的同步函数
  * 注意填写arrayField参数时，list的显示字段和技术字段的名称要保持一致
- * @param {*string} listName 所查询列表的名称  必填
- * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>"
- * @param {*array => ["Title","ID"...]} arrayField    ["Title","ID"...]  必填
+ * @param {*string} listName 所查询列表的名称  （必填）
+ * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>" （必填）
+ * @param {*array => ["Title","ID"...]} arrayField    ["Title","ID"...]  （必填）
+ * @param {string} queryNumber 想要查询的条目数   （可选）
  */
-function getListDataSync(listName, query, arrayField) {
+function getListDataSync(listName, query, arrayField, queryNumber) {
     var data = [];
     if (!listName) {
         return false;
@@ -40,6 +41,7 @@ function getListDataSync(listName, query, arrayField) {
         listName: listName,
         CAMLViewFields: _viewFields,
         CAMLQuery: query,
+        CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
         completefunc: function(xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                 $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
@@ -65,11 +67,12 @@ function getListDataSync(listName, query, arrayField) {
 /**
  * 获取sharepoint list数据的异步函数，该函数会返回一个Promise对象
  * 注意填写arrayField参数时，list的显示字段和技术字段的名称要保持一致
- * @param {*string} listName 所查询列表的名称
- * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>"
- * @param {*array => ["Title","ID"...]} arrayField  必填
+ * @param {*string} listName 所查询列表的名称  （必填）
+ * @param {*string} query   查询条件CAML语法 "<Query><Where></Where></Query>" （必填）
+ * @param {*array => ["Title","ID"...]} arrayField  （必填）
+ * @param {string} queryNumber 想要查询的条目数   （可选）
  */
-function getListDataAsync(listName, query, arrayField) {
+function getListDataAsync(listName, query, arrayField, queryNumber) {
     return new Promise(function(resolve, reject) {
         if (!listName) {
             reject(false);
@@ -94,6 +97,7 @@ function getListDataAsync(listName, query, arrayField) {
             listName: listName,
             CAMLViewFields: _viewFields,
             CAMLQuery: query,
+            CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
             completefunc: function(xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                     var data = [];
@@ -453,8 +457,11 @@ function getUserGroupsAsync(username) {
 
     })
 }
+
+
 /**
  * 对象克隆方法（深度克隆）
+ * 注意：该方法不能克隆对象中存在的函数
  */
 function cloneObj(obj) {
     return JSON.parse(JSON.stringify(obj))
@@ -463,6 +470,7 @@ function cloneObj(obj) {
 /**
  * 获取数组中最大的数据
  * 如果传入参数不是数组，或者传入的数组中存在非数字的元素，返回NaN
+ * @param {Array} arr 数组集合
  */
 function getMaxNumFromArray(arr) {
     if (Object.prototype.toString.call(arr).indexOf('Array') === -1) {
@@ -471,33 +479,38 @@ function getMaxNumFromArray(arr) {
     return Math.max.apply(Math, arr);
 }
 
+
+
+
+/**
+ * 
+ * @param {*String} formatStr 日期转换格式模板如:  YYYY-MM-DD HH:mm:ss 
+ * 该函数返回所期待的日期字符串格式
+ */
 Date.prototype.Format = function(formatStr) {
     var str = formatStr;
     var Week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-
     str = str.replace(/yyyy|YYYY/, this.getFullYear());
     str = str.replace(/yy|YY/, (this.getYear() % 100) > 9 ? (this.getYear() % 100).toString() : '0' + (this.getYear() % 100));
-
     str = str.replace(/MM/, (this.getMonth() + 1) > 9 ? (this.getMonth() + 1).toString() : '0' + this.getMonth() + 1);
     str = str.replace(/M/g, this.getMonth() + 1);
-
     str = str.replace(/w|W/g, Week[this.getDay()]);
-
     str = str.replace(/dd|DD/, this.getDate() > 9 ? this.getDate().toString() : '0' + this.getDate());
     str = str.replace(/d|D/g, this.getDate());
-
     str = str.replace(/hh|HH/, this.getHours() > 9 ? this.getHours().toString() : '0' + this.getHours());
     str = str.replace(/h|H/g, this.getHours());
     str = str.replace(/mm/, this.getMinutes() > 9 ? this.getMinutes().toString() : '0' + this.getMinutes());
     str = str.replace(/m/g, this.getMinutes());
-
     str = str.replace(/ss|SS/, this.getSeconds() > 9 ? this.getSeconds().toString() : '0' + this.getSeconds());
     str = str.replace(/s|S/g, this.getSeconds());
-
     return str;
 }
 
-//生成title
+/**
+ * 
+ * 生成唯一编号，一般用于Title字段
+ * 该方法返回一个唯一的字符串
+ */
 function GenerateNumber() {
     var newdate = new Date();
     var newmonth = (newdate.getMonth() + 1);
@@ -505,6 +518,7 @@ function GenerateNumber() {
     var title = 'F' + curNumber;
     return title;
 }
+
 
 /**
  * 删除多条数据，异步方法
@@ -514,64 +528,6 @@ function GenerateNumber() {
  * 删除成功之后，返回一个boolean值 true代表删除成功
  * 控制台中会打印出没有删除成功数据的id号
  */
-
-/*
-
-function deleteItemsInListAsync(listname, itemIDArrayList) {
-   return new Promise(function (resolve, reject) {
-       var deletedItemsIDList = [];
-       try {
-           if (itemIDArrayList.length == 0) {
-               var obj = {};
-               obj.status = 'success';
-               obj.response = '没有数据被删除';
-               resolve(obj);
-               return;
-           }
-           (function loop(index) {
-               $().SPServices({
-                   operation: 'UpdateListItems',
-                   async: true,
-                   batchCmd: 'Delete', //New, Update, Delete, Moderate
-                   listName: listname,
-                   ID: itemIDArrayList[index],
-                   completefunc: function (xData, Status) {
-                       if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
-                           var obj = {};
-                           var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
-                           obj.status = 'success';
-                           obj.option = 'delete';
-                           obj.ID = itemID;
-                           deletedItemsIDList.push(obj);
-                           if (index < itemIDArrayList.length - 1) {
-                               console.log(index);
-                               index = index + 1;
-                               loop(index)
-                           } else {
-                               resolve(deletedItemsIDList);
-                           }
-                       } else {
-                           //如果有没有被删除的数据，则不影响其他数据的删除
-                           console.log('id为' + itemIDArrayList[index] + '的数据删除失败');
-                           if (index < itemIDArrayList.length - 1) {
-                               console.log(index);
-                               index = index + 1;
-                               loop(index)
-                           } else {
-                               resolve(deletedItemsIDList);
-                           }
-                       }
-                   }
-               });
-           })(0)
-       } catch (error) {
-           console.log(error);
-           reject(error)
-       }
-   })
-}
-*/
-
 function deleteItemsInListAsync(listname, array) {
     return new Promise(function(resolve, reject) {
         var _array = [];
