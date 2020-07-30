@@ -15,6 +15,7 @@
 function onUploadFiles(e) {
     //默认传入对象是kendoUI的时间对象
     if (typeof e === 'object') {
+        //此时默认为kendoui的事件对象
         var files = e.files;
         _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
             console.log(message);
