@@ -4,8 +4,7 @@
  * 封装附件上传异步模式
  * 
  * v1.0 初始版本
- * 未测试
- * 暂勿使用！！
+ * 未测试版，可能无法直接使用
  */
 
 
@@ -44,6 +43,10 @@ function onUploadFiles(e) {
  */
 function _uploadFilesCommonAsync(files, listName, listItemID) {
     return new Promise(function(resolve, reject) {
+        //如果必填参数没有填写，返回false
+        if (!files || !listName || !listItemID) {
+            return Promise.reject(false);
+        }
         Promise.all(files.map(function(file) {
             return new Promise(function(resolve1, reject1) {
                 var reader = new FileReader();
@@ -68,7 +71,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
             }).then(function(data) {
                 //判断，并执行上传
                 return new Promise(function(resolve2, reject2) {
-                    //SP对象是SharePoint环境变量（全局）
+                    //SP对象是SharePoint环境变量（全局）, 在SharePoint环境下存在
                     if (!window.SP.Base64EncodedByteArray) {
                         //如果没有加载sharepoint相应类库，先加载类库方法，然后执行上传逻辑
                         SP.SOD.executeFunc("sp.js", 'SP.ClientContext', function() {
@@ -100,6 +103,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
             })
         })).then(function(result) {
             //此时所有附件上传完成
+            console.log(result);
             resolve('所有文件上传成功')
         }).catch(function(e) {
             //有的附件没有上传完成
