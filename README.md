@@ -104,4 +104,4 @@ function onUploadFiles(e) {
     }
 }
 
-*注意：_uploadFilesCommonAsync该方法是上传文件到SharePoint服务器中的方法，需要传递一些参数，这些参数可以在onUploadFiles函数块中自己通过代码去获取，比如listName, listItemId等参数
+* 注意：_uploadFilesCommonAsync该方法是上传文件到SharePoint服务器中的方法，需要传递一些参数，这些参数可以在onUploadFiles函数块中自己通过代码去获取，比如listName, listItemId等参数
