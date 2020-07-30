@@ -72,3 +72,36 @@ var order = {
 }
 
 * generateQueryStr(config, order)
+
+-----------------------------------------------------------------------------
+2020-7-30
+* 新增文件异步上传代码重构方法
+* 使用方法：
+
+配合KendoUI的onUpload组件对象，给onUpload属性设置方法：onUploadFiles
+如果没有使用kendoUI, 则需要给方法传递input type='file' 控件的id值
+function onUploadFiles(e) {
+    //默认传入对象是kendoUI的事件对象
+    if (typeof e === 'object') {
+        //此时默认为kendoui的事件对象
+        var files = e.files;
+        _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
+            console.log(message);
+        }).catch(function(e) {
+            console.log(e)
+        })
+    } else if (typeof e === 'string') {
+        //获取上传控件id，根据id获取目前上传的附件
+        var files = $("#" + e)[0].files[0];
+        _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
+            console.log(message);
+        }).catch(function(e) {
+            console.log(e)
+        })
+    } else {
+        //不能上传
+        return false;
+    }
+}
+
+*注意：_uploadFilesCommonAsync该方法是上传文件到SharePoint服务器中的方法，需要传递一些参数，这些参数可以在onUploadFiles函数块中自己通过代码去获取，比如listName, listItemId等参数
