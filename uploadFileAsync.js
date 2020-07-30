@@ -80,10 +80,20 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                             uploadFileToSPServer(listName, listItemID, data.fileName, contentData).then(function(b) {
                                 if (b) {
                                     //当前文件上传成功
-                                    resolve2(true)
+                                    var obj = {};
+                                    var fileName = data.fileName;
+                                    var status = 'success';
+                                    obj.fileName = fileName;
+                                    obj.status = status;
+                                    resolve2(obj);
                                 } else {
                                     //当前文件上传失败
-                                    reject2(false)
+                                    var obj = {};
+                                    var fileName = data.fileName;
+                                    var status = 'error';
+                                    obj.fileName = fileName;
+                                    obj.status = status;
+                                    resolve(obj);
                                 }
                             })
                         });
@@ -104,8 +114,8 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
             })
         })).then(function(result) {
             //此时所有附件上传完成
-            console.log(result);
-            resolve('所有文件上传成功')
+            console.log(result); //result里同时存在成功上传的附件和失败上传的附件信息
+            resolve(result);
         }).catch(function(e) {
             //有的附件没有上传完成
             console.log(e);
@@ -113,7 +123,6 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
         })
 
     })
-    console.log(e)
 }
 
 
