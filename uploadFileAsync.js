@@ -2,12 +2,16 @@
  * 重构方法：
  * 异步上传附件，防止浏览器卡死
  * 封装附件上传异步模式
+ * 
+ * v1.0 初始版本
+ * 未测试
+ * 暂勿使用！！
  */
 
 
 /**
  * 
- * @param {(enent obj)} kendoUI的时间对象 
+ * @param {(enent obj)}  * kendoUI的组件的事件对象 或者 传递file控件的id值 
  */
 function onUploadFiles(e) {
     //默认传入对象是kendoUI的时间对象
@@ -48,11 +52,11 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                 var obj = {};
                 //当文件读取成功之后
                 reader.onloadend = function(event) {
-                        obj.result = event.target.result;
-                        obj.fileName = fileName;
-                        resolve1(obj);
-                    }
-                    //当文件读取失败之后
+                    obj.result = event.target.result;
+                    obj.fileName = fileName;
+                    resolve1(obj);
+                };
+                //当文件读取失败之后
                 reader.onerror = function(event) {
                     obj.result = event.target.result;
                     obj.fileName = fileName;
@@ -64,11 +68,12 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
             }).then(function(data) {
                 //判断，并执行上传
                 return new Promise(function(resolve2, reject2) {
-                    if (!SP || !SP.Base64EncodedByteArray) {
+                    //SP对象是SharePoint环境变量（全局）
+                    if (!window.SP.Base64EncodedByteArray) {
                         //如果没有加载sharepoint相应类库，先加载类库方法，然后执行上传逻辑
                         SP.SOD.executeFunc("sp.js", 'SP.ClientContext', function() {
                             var contentData = transformBlob(data.result);
-                            uploadFileToSPServer(listName, listItemID, contentData, function(b) {
+                            uploadFileToSPServer(listName, listItemID, data.fileName, contentData).then(function(b) {
                                 if (b) {
                                     //当前文件上传成功
                                     resolve2(true)
@@ -81,7 +86,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                     } else {
                         //已经加载了内置类库，执行上传逻辑
                         var contentData = transformBlob(data.result);
-                        uploadFileToSPServer(listName, listItemID, window._fileName, contentData, function(b) {
+                        uploadFileToSPServer(listName, listItemID, data.fileName, contentData).then(function(b) {
                             if (b) {
                                 //当前文件上传成功
                                 resolve2(true)
@@ -90,7 +95,6 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                                 reject2(false)
                             }
                         })
-
                     }
                 })
             })
@@ -126,20 +130,22 @@ function transformBlob(buffer) {
  * @param listItemID  表单ID编号
  * @param contentData  附件数据（buffer）
  */
-function uploadFileToSPServer(listName, listItemID, fileName, contentData, callback) {
-    $().SPServices({
-        operation: "AddAttachment",
-        listName: listName,
-        async: true,
-        listItemID: listItemID,
-        fileName: fileName,
-        attachment: contentData.toBase64String(),
-        completefunc: function(xData, Status) {
-            if (Status != 'success') {
-                callback(true)
-            } else {
-                callback(false)
+function uploadFileToSPServer(listName, listItemID, fileName, contentData) {
+    return new Promise(function(resolve, reject) {
+        $().SPServices({
+            operation: "AddAttachment",
+            listName: listName,
+            async: true,
+            listItemID: listItemID,
+            fileName: fileName,
+            attachment: contentData.toBase64String(),
+            completefunc: function(xData, Status) {
+                if (Status != 'success') {
+                    resolve(true);
+                } else {
+                    reject(false);
+                }
             }
-        }
-    });
+        });
+    })
 }
