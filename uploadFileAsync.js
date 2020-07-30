@@ -17,6 +17,11 @@ function onUploadFiles(e) {
     if (typeof e === 'object') {
         //此时默认为kendoui的事件对象
         var files = e.files;
+        var listName, listItemID;
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
+
         _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
             console.log(message);
         }).catch(function(e) {
@@ -25,6 +30,11 @@ function onUploadFiles(e) {
     } else if (typeof e === 'string') {
         //获取上传控件id，根据id获取目前上传的附件
         var files = $("#" + e)[0].files[0]; //获取所上传的文件数组
+        var listName, listItemID;
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
+
         var length = files.length; //文件数组长度
         if (length === 0) return; //说明没有上传新的文件
         _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
