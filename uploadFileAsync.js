@@ -76,7 +76,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                     //SP对象是SharePoint环境变量（全局）, 在SharePoint环境下存在
                     if (!window.SP.Base64EncodedByteArray) {
                         //如果没有加载sharepoint相应类库，先加载类库方法，然后执行上传逻辑
-                        SP.SOD.executeFunc("sp.js", 'SP.ClientContext', function() {
+                        SP.SOD.executeFunc("sp.js", "SP.ClientContext", function() {
                             var contentData = transformBlob(data.result);
                             uploadFileToSPServer(listName, listItemID, data.fileName, contentData).then(function(b) {
                                 if (b) {
