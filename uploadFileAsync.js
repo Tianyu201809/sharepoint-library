@@ -108,11 +108,12 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
             resolve('所有文件上传成功')
         }).catch(function(e) {
             //有的附件没有上传完成
+            console.log(e);
             reject('文件上传失败');
         })
 
     })
-
+    console.log(e)
 }
 
 
