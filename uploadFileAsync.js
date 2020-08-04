@@ -23,8 +23,14 @@ function onUploadFiles(e) {
          */
 
         _uploadFilesCommonAsync(files, listName, listItemID).then(function (message) {
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
             console.log(message);
         }).catch(function (e) {
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
             console.log(e)
         })
     } else if (typeof e === 'string') {
