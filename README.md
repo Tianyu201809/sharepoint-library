@@ -1,10 +1,10 @@
-说明：
-------------------------------------------------------------------------------
-2020-06-02
+# 说明：
+------------------------------------------------------------------------
+## 2020-06-02
 * 本类库是sharepoint工具类库文件:
 * common.js封装了对于SharePoint列表的CRUD操作（包含同步和异步两种），以及一些工具方法
-------------------------------------------------------------------------------
-2020-06-02
+------------------------------------------------------------------------
+## 2020-06-02
 lib 文件夹是平时开发中所用到的一些类库
 * jquery-3.1.0.min.js
 * jquery-ui.js
@@ -14,8 +14,8 @@ lib 文件夹是平时开发中所用到的一些类库
 * xlsx.core.min.js
 * promise.js
 * vue.min.js
-------------------------------------------------------------------------------
-2020-7-3新增读取excel文件数据的方法readExcel.js
+------------------------------------------------------------------------
+## 2020-7-3新增读取excel文件数据的方法readExcel.js
 使用方法：
 直接调用函数Excel2Json(file, _keyMapRule, sheetName)
  * file是所需读取的excel文件
@@ -33,7 +33,7 @@ lib 文件夹是平时开发中所用到的一些类库
          }
         }·
 -----------------------------------------------------------------------------
-2020-7-27 
+## 2020-7-27 
 * 新增防抖与节流工具函数,位于文件debounce.js中
 * 新增生成caml查询字符串函数generateQueryStr，位于SPfilter-ES5.js文件中
 
@@ -74,7 +74,7 @@ var order = {
 * generateQueryStr(config, order)
 
 -----------------------------------------------------------------------------
-2020-7-30
+## 2020-7-30
 * 新增文件异步上传代码重构方法
 * 使用方法：
 
@@ -118,12 +118,12 @@ function onUploadFiles(e) {
                 template: $("#fileTemplate").html(),
                 async:
                 {
-                    saveUrl: _spPageContextInfo.webAbsoluteUrl + "/save",
-                    removeUrl: _spPageContextInfo.webAbsoluteUrl + "/remove",
+               saveUrl: _spPageContextInfo.webAbsoluteUrl + "/save",
+               removeUrl: _spPageContextInfo.webAbsoluteUrl + "/remove",
                     autoUpload: false
                 },
                 files: allfiles,
-                ·upload: onUploadFiles·, //绑定上传附件方法：onUploadFiles
+                upload: onUploadFiles, //绑定上传附件方法：onUploadFiles
                 validation: {
                     allowedExtensions: allowedExtensionsArray,
                     maxFileSize: filemaxsize,
