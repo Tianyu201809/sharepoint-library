@@ -86,14 +86,20 @@ function onUploadFiles(e) {
         //此时默认为kendoui的事件对象
         var files = e.files;
         _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
             console.log(message);
         }).catch(function(e) {
             console.log(e)
         })
     } else if (typeof e === 'string') {
         //获取上传控件id，根据id获取目前上传的附件
-        var files = $("#" + e)[0].files[0];
+        var files = $("#" + e)[0].files; //获取所上传的文件类数组对象
         _uploadFilesCommonAsync(files, listName, listItemID).then(function(message) {
+        /**
+         * 此处请设置 listName, listItemID的参数值
+         */
             console.log(message);
         }).catch(function(e) {
             console.log(e)
@@ -105,3 +111,26 @@ function onUploadFiles(e) {
 }
 
 * 注意：_uploadFilesCommonAsync该方法是上传文件到SharePoint服务器中的方法，需要传递一些参数，这些参数可以在onUploadFiles函数块中自己通过代码去获取，比如listName, listItemId等参数
+
+* 示例
+        $("#uploadFile").kendoUpload(
+            {
+                template: $("#fileTemplate").html(),
+                async:
+                {
+                    saveUrl: _spPageContextInfo.webAbsoluteUrl + "/save",
+                    removeUrl: _spPageContextInfo.webAbsoluteUrl + "/remove",
+                    autoUpload: false
+                },
+                files: allfiles,
+                ·upload: onUploadFiles·, //绑定上传附件方法：onUploadFiles
+                validation: {
+                    allowedExtensions: allowedExtensionsArray,
+                    maxFileSize: filemaxsize,
+                    minFileSize: 0
+                },
+                success: onSuccess,
+                error: onError,
+                complete: uploadFileComplete,
+                select: onSelectSA_UploadFile
+            });
