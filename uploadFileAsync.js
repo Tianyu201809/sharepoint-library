@@ -10,7 +10,8 @@
 
 /**
  * 
- * @param {(event obj)}  * kendoUI的组件的事件对象 或者 传递file控件的id值 
+ * @param {(event obj)}  * kendoUI的组件的事件对象 
+ * 注意：如果没有使用kendoui类库，那平时使用时传递file控件的id值 
  */
 function onUploadFiles(e) {
     //默认传入对象是kendoUI的事件对象
@@ -21,6 +22,7 @@ function onUploadFiles(e) {
         /**
          * 此处请设置 listName, listItemID的参数值
          */
+
 
         _uploadFilesCommonAsync(files, listName, listItemID).then(function (message) {
         /**
@@ -132,7 +134,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                                             if (index < len - 1) {
                                                 //条件成立，还需要继续上传下一个文件
                                                 index = index + 1;
-                                                loopCallBack(i);
+                                                loopCallBack(index);
                                             } else {
                                                 //后面没有新的文件要上传了, 将所有上传成功的文件的文件名输出
                                                 resolve(filesNameContainer);
@@ -143,7 +145,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                                             if (index < len - 1) {
                                                 //条件成立，还需要继续上传下一个文件
                                                 index = index + 1;
-                                                loopCallBack(i);
+                                                loopCallBack(index);
                                             } else {
                                                 //后面没有新的文件要上传了, 将所有上传成功的文件的文件名输出
                                                 resolve(filesNameContainer)
@@ -175,7 +177,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                                         if (index < len - 1) {
                                             //条件成立，还需要继续上传下一个文件
                                             index = index + 1;
-                                            loopCallBack(i);
+                                            loopCallBack(index);
                                         } else {
                                             //后面没有新的文件要上传了, 将所有上传成功的文件的文件名/状态 输出
                                             resolve(filesNameContainer);
@@ -189,7 +191,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
                                         if (index < len - 1) {
                                             //条件成立，还需要继续上传下一个文件
                                             index = index + 1;
-                                            loopCallBack(i);
+                                            loopCallBack(index);
                                         } else {
                                             //后面没有新的文件要上传了, 将所有上传的文件的文件名/状态 输出
                                             resolve(filesNameContainer)
