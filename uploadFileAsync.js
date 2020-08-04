@@ -220,7 +220,7 @@ function _uploadFilesCommonAsync(files, listName, listItemID) {
 
 /**
  * 
- * @param buffer reader对象读取完成的文件
+ * @param {buffer} reader对象读取完成的文件
  */
 function transformBlob(buffer) {
     var bytes = new Uint8Array(buffer);
