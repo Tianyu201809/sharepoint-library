@@ -22,7 +22,7 @@
 function debounce(func, delay) {
     var timer = null;
     var that = this;
-    delay ? delay : 500;
+    delay = delay || 500;
     return function() {
         if (timer) {
             clearTimeout(timer);
