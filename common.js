@@ -42,9 +42,9 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
         CAMLViewFields: _viewFields,
         CAMLQuery: query,
         CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
+                $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
                         data[i] ? data[i] : data[i] = {};
@@ -73,7 +73,7 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
  * @param {string} queryNumber 想要查询的条目数   （可选）
  */
 function getListDataAsync(listName, query, arrayField, queryNumber) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             reject(false);
             return;
@@ -98,10 +98,10 @@ function getListDataAsync(listName, query, arrayField, queryNumber) {
             CAMLViewFields: _viewFields,
             CAMLQuery: query,
             CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
                     var data = [];
-                    $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
+                    $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                         for (var j = 0; j < arrayField.length; j++) {
                             var key = String(arrayField[j]);
                             data[i] ? data[i] : data[i] = {};
@@ -138,7 +138,7 @@ function insertDataIntoListSync(listName, data) {
         batchCmd: 'New',
         listName: listName,
         valuepairs: data,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
                 obj['ID'] = itemID;
@@ -161,7 +161,7 @@ function insertDataIntoListSync(listName, data) {
  * @param {*string} data  所添加的数据  必填参数 eg :[['Title',"hello"],['field1','test',],...]
  */
 function insertDataIntoListAsync(listName, data) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             return Promise.reject();
         }
@@ -171,7 +171,7 @@ function insertDataIntoListAsync(listName, data) {
             batchCmd: 'New',
             listName: listName,
             valuepairs: data,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
@@ -208,7 +208,7 @@ function delListItemSync(listName, itemID) {
         batchCmd: 'Delete', //New, Update, Delete, Moderate
         listName: listName,
         ID: itemID, //
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " deleted success";
@@ -227,7 +227,7 @@ function delListItemSync(listName, itemID) {
  * @param {*string} itemID  SP List item ID值
  */
 function delListItemAsync(listName, itemID) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             reject(false);
         }
@@ -240,7 +240,7 @@ function delListItemAsync(listName, itemID) {
             batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
             listName: listName,
             ID: itemID,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -282,7 +282,7 @@ function updateListItemSync(listName, itemID, data) {
         listName: listName,
         ID: itemID,
         valuepairs: data,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " updated success";
@@ -304,7 +304,7 @@ function updateListItemSync(listName, itemID, data) {
  * @param {*array => [['Title','123'],['field1','123'],['field2','123']...]} 必填
  */
 function updateListItemAsync(listName, itemID, data) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             return Promise.reject(false);
         }
@@ -322,7 +322,7 @@ function updateListItemAsync(listName, itemID, data) {
             listName: listName,
             ID: itemID,
             valuepairs: data,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -350,7 +350,7 @@ function updateListItemAsync(listName, itemID, data) {
  * var time1 = new Date().format("yyyy-MM-dd HH:mm:ss");     
  * var time2 = new Date().format("yyyy-MM-dd");  
  */
-Date.prototype.format = function(fmt) { //author: meizz   
+Date.prototype.format = function (fmt) { //author: meizz   
     var o = {
         "M+": this.getMonth() + 1, //月份   
         "d+": this.getDate(), //日   
@@ -417,9 +417,9 @@ function getUserGroupsSync(username) {
         operation: "GetGroupCollectionFromUser",
         userLoginName: username,
         async: false,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                $(xData.responseXML).SPFilterNode("Group").each(function() {
+                $(xData.responseXML).SPFilterNode("Group").each(function () {
                     userInGroup.push($(this).attr("Name") || "");
                 });
             }
@@ -436,15 +436,15 @@ function getUserGroupsSync(username) {
 
 function getUserGroupsAsync(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var userInGroup = [];
         $().SPServices({
             operation: "GetGroupCollectionFromUser",
             userLoginName: username,
             async: true,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                    $(xData.responseXML).SPFilterNode("Group").each(function() {
+                    $(xData.responseXML).SPFilterNode("Group").each(function () {
                         userInGroup.push($(this).attr("Name") || "");
                     });
                     resolve(userInGroup);
@@ -487,7 +487,7 @@ function getMaxNumFromArray(arr) {
  * @param {*String} formatStr 日期转换格式模板如:  YYYY-MM-DD HH:mm:ss 
  * 该函数返回所期待的日期字符串格式
  */
-Date.prototype.Format = function(formatStr) {
+Date.prototype.Format = function (formatStr) {
     var str = formatStr;
     var Week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
     str = str.replace(/yyyy|YYYY/, this.getFullYear());
@@ -529,18 +529,18 @@ function GenerateNumber() {
  * 控制台中会打印出没有删除成功数据的id号
  */
 function deleteItemsInListAsync(listname, array) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var _array = [];
         for (var i = 0; i < array.length; i++) {
-            (function(index) {
-                _array[index] = new Promise(function(resolve, reject) {
+            (function (index) {
+                _array[index] = new Promise(function (resolve, reject) {
                     $().SPServices({
                         operation: 'UpdateListItems',
                         async: true,
                         batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
                         listName: listname,
                         ID: array[index],
-                        completefunc: function(xData, Status) {
+                        completefunc: function (xData, Status) {
                             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                                 var obj = {};
                                 var itemID = array[index];
@@ -561,17 +561,17 @@ function deleteItemsInListAsync(listname, array) {
                 })
             })(i)
         }
-        Promise.all(_array.map(function(p) {
-                return p.catch(function(e) {
-                    return e;
-                })
-            }))
-            .then(function(result) {
+        Promise.all(_array.map(function (p) {
+            return p.catch(function (e) {
+                return e;
+            })
+        }))
+            .then(function (result) {
                 console.log(result);
                 console.log('delete data success');
                 resolve(true);
             })
-            .catch(function(err) {
+            .catch(function (err) {
                 console.log(err);
                 console.log('delete data error');
                 resolve(false);
@@ -597,3 +597,27 @@ function isInclude(value, array) {
         return false;
     }
 }
+
+/**
+ * 数组去重方法
+ */
+
+function unique(arr) {
+    return arr.filter(function (item, index, arr) {
+        //当前元素，在原始数组中的第一个索引==当前索引值，否则返回当前元素
+        return arr.indexOf(item, 0) === index;
+    });
+}
+
+
+/**
+* 输出两个数组中不同的元素
+* @param { Array }arr1 获取到的category的id数组集合
+* @param { Array }arr2 当前的category的id数组集合
+*/
+function getArrDifference(arr1, arr2) {
+    return arr1.concat(arr2).filter(function (v, i, arr) {
+        return arr.indexOf(v) === arr.lastIndexOf(v)
+    })
+}
+
