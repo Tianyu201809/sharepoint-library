@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.3  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.4  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: Tianyu Zhang
- * 时间: 2020-07-28
+ * 时间: 2020-11-8
  */
 
 
