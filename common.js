@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.3  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.5  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: Tianyu Zhang
- * 时间: 2020-07-28
+ * 更新时间: 2020-11-22
  */
 
 
@@ -42,9 +42,9 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
         CAMLViewFields: _viewFields,
         CAMLQuery: query,
         CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
+                $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
                     for (var j = 0; j < arrayField.length; j++) {
                         var key = String(arrayField[j]);
                         data[i] ? data[i] : data[i] = {};
@@ -73,7 +73,7 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
  * @param {string} queryNumber 想要查询的条目数   （可选）
  */
 function getListDataAsync(listName, query, arrayField, queryNumber) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             reject(false);
             return;
@@ -98,22 +98,29 @@ function getListDataAsync(listName, query, arrayField, queryNumber) {
             CAMLViewFields: _viewFields,
             CAMLQuery: query,
             CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
-            completefunc: function(xData, Status) {
-                if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                    var data = [];
-                    $(xData.responseXML).SPFilterNode("z:row").each(function(i, val) {
-                        for (var j = 0; j < arrayField.length; j++) {
-                            var key = String(arrayField[j]);
-                            data[i] ? data[i] : data[i] = {};
-                            data[i][key] = $(this).attr("ows_" + key + "") || "";
-                        }
-                    });
-                    resolve(data);
+            completefunc: function (xData, Status) {
+                if (Status === 'success') {
+                    if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
+                        var data = [];
+                        $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                            for (var j = 0; j < arrayField.length; j++) {
+                                var key = String(arrayField[j]);
+                                data[i] ? data[i] : data[i] = {};
+                                data[i][key] = $(this).attr("ows_" + key + "") || "";
+                            }
+                        });
+                        resolve(data);
+                    } else {
+                        // var err = {};
+                        // err['response'] = xData.responseText;
+                        // err['status'] = "error";
+                        resolve([]);
+                    }
                 } else {
                     var err = {};
                     err['response'] = xData.responseText;
                     err['status'] = "error";
-                    reject(err);
+                    reject(err)
                 }
             }
         });
@@ -130,6 +137,7 @@ function insertDataIntoListSync(listName, data) {
     var itemID;
     var obj = {};
     if (!listName) {
+        insert
         return false;
     }
     $().SPServices({
@@ -138,7 +146,7 @@ function insertDataIntoListSync(listName, data) {
         batchCmd: 'New',
         listName: listName,
         valuepairs: data,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
                 obj['ID'] = itemID;
@@ -161,7 +169,7 @@ function insertDataIntoListSync(listName, data) {
  * @param {*string} data  所添加的数据  必填参数 eg :[['Title',"hello"],['field1','test',],...]
  */
 function insertDataIntoListAsync(listName, data) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             return Promise.reject();
         }
@@ -171,7 +179,7 @@ function insertDataIntoListAsync(listName, data) {
             batchCmd: 'New',
             listName: listName,
             valuepairs: data,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     var itemID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
@@ -190,6 +198,123 @@ function insertDataIntoListAsync(listName, data) {
         });
     })
 }
+
+
+/**
+ * 检查所传入的数组是否含有ID
+ * 如果存在ID值，则返回ID
+ * 不存在ID 返回一个空字符串
+ */
+function checkArrayhasIDField(array) {
+    var flag = "";
+    $.each(array, function (i, item) {
+        var type = Object.prototype.toString.call(item);
+        if (type === '[object Array]' && item[0] === 'ID' && (item[1] && item[1] != 'undefined')) {
+            //说明该数组中包含ID字段
+            flag = item[1];
+            return false;
+        }
+    })
+    return flag;
+}
+
+/**
+ * 批量添加/更新表单数据
+ * 如果传入存在[ID,'11']这种
+ * @param {*} listName  表单名称
+ * @param {*} arraylistItem  [[[],[],[]],[[],[],[]]] 传入的二维数组参数
+ * 异步函数
+ */
+function mulInsertListDataAsync(listName, arraylistItems) {
+    return new Promise(function (resolve, reject) {
+        (function loop(index) {
+            var f = checkArrayhasIDField(arraylistItems[index]);
+            if (!f) {
+                //create
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    batchCmd: 'New',
+                    listName: listName,
+                    valuepairs: arraylistItems[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            var approvalLineID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
+                            console.log("approval line id:" + approvalLineID);
+                            if (index < arraylistItems.length - 1) {
+                                console.log(index);
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                console.log('approval line items 新增完成')
+                                resolve(true);
+                            }
+                        } else {
+                            reject();
+                        }
+                    }
+                });
+            } else {
+                //update
+                var approverLineID = _getItemsID(arraylistItems[index]);
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    //batchCmd: 'New',
+                    ID: approverLineID,
+                    listName: listName,
+                    valuepairs: arraylistItems[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            if (index < arraylistItems.length - 1) {
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                console.log('approval line items 更新完成')
+                                resolve(true);
+                            }
+                        } else {
+                            reject();
+                        }
+                    }
+                });
+            }
+        })(0);
+    })
+}
+
+/**
+ * 批量添加/更新表单数据
+ * 如果传入存在[ID,'11']这种
+ * @param {*} listName  表单名称
+ * @param {*} arraylistItem  [[[],[],[]],[[],[],[]]] 传入的二维数组参数
+ * 同步函数
+ */
+function mulInsertListDataSync() {
+
+}
+
+/**
+ * 获取二维数组中的id值
+ * [["ID",12],["company","DGRC"]]
+ */
+function _getItemsID(array) {
+    var approvalLineID = "";
+    $.each(array, function (i, item) {
+        var type = Object.prototype.toString.call(item);
+        if (type === '[object Array]' && item[0] === 'ID' && item[1]) {
+            //说明该数组中包含ID字段
+            approvalLineID = item[1]
+            return false;
+        }
+    })
+    return approvalLineID;
+}
+
+
+
+
+
 /**
  * 删除item 同步方法，返回一个obj对象
  */
@@ -208,7 +333,7 @@ function delListItemSync(listName, itemID) {
         batchCmd: 'Delete', //New, Update, Delete, Moderate
         listName: listName,
         ID: itemID, //
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " deleted success";
@@ -227,7 +352,7 @@ function delListItemSync(listName, itemID) {
  * @param {*string} itemID  SP List item ID值
  */
 function delListItemAsync(listName, itemID) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             reject(false);
         }
@@ -240,7 +365,7 @@ function delListItemAsync(listName, itemID) {
             batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
             listName: listName,
             ID: itemID,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -282,7 +407,7 @@ function updateListItemSync(listName, itemID, data) {
         listName: listName,
         ID: itemID,
         valuepairs: data,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                 obj['status'] = "success";
                 obj['response'] = 'ID:' + itemID + " updated success";
@@ -304,7 +429,7 @@ function updateListItemSync(listName, itemID, data) {
  * @param {*array => [['Title','123'],['field1','123'],['field2','123']...]} 必填
  */
 function updateListItemAsync(listName, itemID, data) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         if (!listName) {
             return Promise.reject(false);
         }
@@ -322,7 +447,7 @@ function updateListItemAsync(listName, itemID, data) {
             listName: listName,
             ID: itemID,
             valuepairs: data,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                     var obj = {};
                     obj['status'] = "success";
@@ -350,7 +475,7 @@ function updateListItemAsync(listName, itemID, data) {
  * var time1 = new Date().format("yyyy-MM-dd HH:mm:ss");     
  * var time2 = new Date().format("yyyy-MM-dd");  
  */
-Date.prototype.format = function(fmt) { //author: meizz   
+Date.prototype.format = function (fmt) { //author: meizz   
     var o = {
         "M+": this.getMonth() + 1, //月份   
         "d+": this.getDate(), //日   
@@ -374,12 +499,24 @@ Date.prototype.format = function(fmt) { //author: meizz
  */
 
 function ConvertDateISO(dateVal) {
+    if (dateVal.indexOf('NaN') > -1 || !dateVal) {
+        return "";
+    }
     var result = $().SPServices.SPConvertDateToISO({
         dateToConvert: new Date(dateVal),
         dateOffset: "-05:00"
     });
     return result;
 }
+
+/**
+ * 获取当前时间
+ * ISO格式
+ */
+
+function getCurrentDateTime() {
+    return ConvertDateISO(new Date().format('yyyy-MM-dd hh:mm:ss'));
+  }
 
 
 /**
@@ -417,9 +554,9 @@ function getUserGroupsSync(username) {
         operation: "GetGroupCollectionFromUser",
         userLoginName: username,
         async: false,
-        completefunc: function(xData, Status) {
+        completefunc: function (xData, Status) {
             if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                $(xData.responseXML).SPFilterNode("Group").each(function() {
+                $(xData.responseXML).SPFilterNode("Group").each(function () {
                     userInGroup.push($(this).attr("Name") || "");
                 });
             }
@@ -436,20 +573,20 @@ function getUserGroupsSync(username) {
 
 function getUserGroupsAsync(username) {
     username ? username : username = $().SPServices.SPGetCurrentUser();
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var userInGroup = [];
         $().SPServices({
             operation: "GetGroupCollectionFromUser",
             userLoginName: username,
             async: true,
-            completefunc: function(xData, Status) {
+            completefunc: function (xData, Status) {
                 if ($(xData.responseXML).SPFilterNode("Group").length > 0) {
-                    $(xData.responseXML).SPFilterNode("Group").each(function() {
+                    $(xData.responseXML).SPFilterNode("Group").each(function () {
                         userInGroup.push($(this).attr("Name") || "");
                     });
                     resolve(userInGroup);
                 } else {
-                    reject([]); //获取权限失败
+                    resolve([]); //获取权限失败
                 }
 
             }
@@ -457,6 +594,67 @@ function getUserGroupsAsync(username) {
 
     })
 }
+
+/**
+ * 检查当前登录人是是否存在某个权限或某些权限
+ * @param {*String / array} userGroup 所查询的权限
+ * 当参数为array时，根据传入的参数，返回对应的boolean值
+ */
+function userHasGroupSync(userGroup) {
+    //首先检查userGroup类型
+    if (userGroup && typeof userGroup === 'string') {
+        var userContainGroup = getUserGroupsSync();
+        if (userContainGroup.indexOf(userGroup) > -1) {
+            return true
+        }
+    } else if (typeof userGroup === 'object' && Object.prototype.toString.call(userGroup) === '[object Array]' && userGroup) {
+        var arr = [];
+        for (var i = 0; i < userGroup.length; i++) {
+            if (userContainGroup.indexOf(userGroup[i]) > -1) {
+                arr.push(true);
+            } else {
+                arr.push(false);
+            }
+        }
+        return arr;
+    }
+}
+
+
+/**
+ * 检查当前登录人是是否存在某个权限或某些权限
+ * @param {*String / array} userGroup 所查询的权限
+ * 当参数为array时，根据传入的参数，返回对应的boolean值
+ */
+function userHasGroupAsync(userGroup) {
+    return new Promise(function (resolve, reject) {
+        getUserGroupsAsync().then(function (userContainGroup) {
+            //首先检查userGroup类型
+            if (userGroup && typeof userGroup === 'string') {
+                if (userContainGroup.indexOf(userGroup) > -1) {
+                    resolve(true)
+                }
+            } else if (typeof userGroup === 'object' && Object.prototype.toString.call(userGroup) === '[object Array]' && userGroup) {
+                var arr = [];
+                for (var i = 0; i < userGroup.length; i++) {
+                    if (userContainGroup.indexOf(userGroup[i]) > -1) {
+                        arr.push(true);
+                    } else {
+                        arr.push(false);
+                    }
+                }
+                resolve(arr);
+            }
+        }).catch(function (e) {
+            reject(e)
+        })
+    })
+
+}
+
+
+
+
 
 
 /**
@@ -487,7 +685,7 @@ function getMaxNumFromArray(arr) {
  * @param {*String} formatStr 日期转换格式模板如:  YYYY-MM-DD HH:mm:ss 
  * 该函数返回所期待的日期字符串格式
  */
-Date.prototype.Format = function(formatStr) {
+Date.prototype.Format = function (formatStr) {
     var str = formatStr;
     var Week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
     str = str.replace(/yyyy|YYYY/, this.getFullYear());
@@ -511,11 +709,12 @@ Date.prototype.Format = function(formatStr) {
  * 生成唯一编号，一般用于Title字段
  * 该方法返回一个唯一的字符串
  */
-function GenerateNumber() {
+function GenerateNumber(str) {
+    str ? str : str = "F";
     var newdate = new Date();
     var newmonth = (newdate.getMonth() + 1);
     var curNumber = newdate.Format('YYYY') + (newmonth < 10 ? ('0' + newmonth) : newmonth) + newdate.Format('DD') + "-" + newdate.Format('HHmmSS');
-    var title = 'F' + curNumber;
+    var title = str + curNumber;
     return title;
 }
 
@@ -529,18 +728,18 @@ function GenerateNumber() {
  * 控制台中会打印出没有删除成功数据的id号
  */
 function deleteItemsInListAsync(listname, array) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var _array = [];
         for (var i = 0; i < array.length; i++) {
-            (function(index) {
-                _array[index] = new Promise(function(resolve, reject) {
+            (function (index) {
+                _array[index] = new Promise(function (resolve, reject) {
                     $().SPServices({
                         operation: 'UpdateListItems',
                         async: true,
                         batchCmd: 'Delete', //可以包含的参数: New, Update, Delete, Moderate
                         listName: listname,
                         ID: array[index],
-                        completefunc: function(xData, Status) {
+                        completefunc: function (xData, Status) {
                             if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
                                 var obj = {};
                                 var itemID = array[index];
@@ -561,17 +760,17 @@ function deleteItemsInListAsync(listname, array) {
                 })
             })(i)
         }
-        Promise.all(_array.map(function(p) {
-                return p.catch(function(e) {
-                    return e;
-                })
-            }))
-            .then(function(result) {
+        Promise.all(_array.map(function (p) {
+            return p.catch(function (e) {
+                return e;
+            })
+        }))
+            .then(function (result) {
                 console.log(result);
                 console.log('delete data success');
                 resolve(true);
             })
-            .catch(function(err) {
+            .catch(function (err) {
                 console.log(err);
                 console.log('delete data error');
                 resolve(false);
@@ -597,3 +796,84 @@ function isInclude(value, array) {
         return false;
     }
 }
+
+/**
+ * 数组去重方法
+ */
+
+function unique(arr) {
+    return arr.filter(function (item, index, arr) {
+        //当前元素，在原始数组中的第一个索引==当前索引值，否则返回当前元素
+        return arr.indexOf(item, 0) === index;
+    });
+}
+
+
+/**
+* 输出两个数组中不同的元素
+* @param { Array }arr1 获取到的category的id数组集合
+* @param { Array }arr2 当前的category的id数组集合
+*/
+function getArrDifference(arr1, arr2) {
+    return arr1.concat(arr2).filter(function (v, i, arr) {
+        return arr.indexOf(v) === arr.lastIndexOf(v)
+    })
+}
+
+
+
+/**
+ * 对象合并polyfill
+ * 为兼容IE浏览器使用Object.assign()方法
+ */
+
+function zyEs6AssignPolyfill() {
+    if (!Object.assign) {
+        Object.defineProperty(Object, "assign", {
+            enumerable: false,
+            configurable: true,
+            writable: true,
+            value: function (target, firstSource) {
+                "use strict";
+                if (target === undefined || target === null) throw new TypeError("Cannot convert first argument to object");
+                var to = Object(target);
+                for (var i = 1; i < arguments.length; i++) {
+                    var nextSource = arguments[i];
+                    if (nextSource === undefined || nextSource === null) continue;
+                    var keysArray = Object.keys(Object(nextSource));
+                    for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                        var nextKey = keysArray[nextIndex];
+                        var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                        if (desc !== undefined && desc.enumerable) to[nextKey] = nextSource[nextKey];
+                    }
+                }
+                return to;
+            }
+        });
+    }
+}
+
+/**
+ * 判断当前运行环境是否为IE浏览器
+ * 是  返回true
+ * 不是  返回fasle
+ */
+function isIE() {
+    if (!!window.ActiveXObject || "ActiveXObject" in window) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * 日期字符串截取
+ * @param {*} str 
+ */
+function dateFormat(str) {
+    if (!str || typeof str != 'string') {
+        return "";
+    }
+    return str.split(" ")[0];
+}
+
