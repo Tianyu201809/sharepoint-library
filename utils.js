@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.5  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
- * 作者: Tianyu Zhang
- * 更新时间: 2020-11-22
+ * version 1.7  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * 作者: apsolut China Co., Ltd.
+ * 更新时间: 2020-1-29
  */
 
 
@@ -43,14 +43,17 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
         CAMLQuery: query,
         CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
         completefunc: function (xData, Status) {
-            if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                    for (var j = 0; j < arrayField.length; j++) {
-                        var key = String(arrayField[j]);
-                        data[i] ? data[i] : data[i] = {};
-                        data[i][key] = $(this).attr("ows_" + key + "") || "";
-                    }
-                });
+            if (Status === 'success') {
+                if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
+                    $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                        for (var j = 0; j < arrayField.length; j++) {
+                            var key = String(arrayField[j]);
+                            data[i] ? data[i] : data[i] = {};
+                            data[i][key] = $(this).attr("ows_" + key + "") || "";
+                        }
+                    });
+                }
+                //没有数据则 返回data = []
             } else {
                 var err = {};
                 err['response'] = xData.responseText;
@@ -137,7 +140,6 @@ function insertDataIntoListSync(listName, data) {
     var itemID;
     var obj = {};
     if (!listName) {
-        insert
         return false;
     }
     $().SPServices({
@@ -246,11 +248,12 @@ function mulInsertListDataAsync(listName, arraylistItems) {
                                 index = index + 1;
                                 loop(index)
                             } else {
-                                console.log('approval line items 新增完成')
+                                console.log('insert data success')
                                 resolve(true);
                             }
                         } else {
-                            reject();
+                            var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                            reject(errorText);
                         }
                     }
                 });
@@ -270,11 +273,12 @@ function mulInsertListDataAsync(listName, arraylistItems) {
                                 index = index + 1;
                                 loop(index)
                             } else {
-                                console.log('approval line items 更新完成')
+                                console.log('update data success')
                                 resolve(true);
                             }
                         } else {
-                            reject();
+                            var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                            reject(errorText);
                         }
                     }
                 });
@@ -290,8 +294,59 @@ function mulInsertListDataAsync(listName, arraylistItems) {
  * @param {*} arraylistItem  [[[],[],[]],[[],[],[]]] 传入的二维数组参数
  * 同步函数
  */
-function mulInsertListDataSync() {
-
+function mulInsertListDataSync(listName, arraylistItems) {
+    var result = [];
+    for (var index = 0; arraylistItems < array.length; index++) {
+        var f = checkArrayhasIDField(arraylistItems[index]);
+        if (!f) {
+            //create
+            $().SPServices({
+                operation: 'UpdateListItems',
+                async: false,
+                batchCmd: 'New',
+                listName: listName,
+                valuepairs: arraylistItems[index],
+                completefunc: function (xData, Status) {
+                    if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                        result.push(true)
+                    } else {
+                        var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                        console.log(errorText);
+                        result.push(false);
+                    }
+                }
+            });
+        } else {
+            //update
+            var approverLineID = _getItemsID(arraylistItems[index]);
+            $().SPServices({
+                operation: 'UpdateListItems',
+                async: false,
+                //batchCmd: 'New',
+                ID: approverLineID,
+                listName: listName,
+                valuepairs: arraylistItems[index],
+                completefunc: function (xData, Status) {
+                    if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                        result.push(true)
+                    } else {
+                        var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                        console.log(errorText);
+                        result.push(false)
+                    }
+                }
+            });
+        }
+    }
+    var _result = true;
+    if (result.length > 0) {
+        result.forEach(function (item) {
+            if (!item) {
+                _result = false;
+            }
+        })
+    }
+    return _result;
 }
 
 /**
@@ -499,9 +554,6 @@ Date.prototype.format = function (fmt) { //author: meizz
  */
 
 function ConvertDateISO(dateVal) {
-    if (dateVal.indexOf('NaN') > -1 || !dateVal) {
-        return "";
-    }
     var result = $().SPServices.SPConvertDateToISO({
         dateToConvert: new Date(dateVal),
         dateOffset: "-05:00"
@@ -515,8 +567,8 @@ function ConvertDateISO(dateVal) {
  */
 
 function getCurrentDateTime() {
-    return ConvertDateISO(new Date().format('yyyy-MM-dd hh:mm:ss'));
-  }
+    return ConvertDateISO(new Date());
+}
 
 
 /**
@@ -756,7 +808,6 @@ function deleteItemsInListAsync(listname, array) {
                             }
                         }
                     });
-
                 })
             })(i)
         }
@@ -811,8 +862,8 @@ function unique(arr) {
 
 /**
 * 输出两个数组中不同的元素
-* @param { Array }arr1 获取到的category的id数组集合
-* @param { Array }arr2 当前的category的id数组集合
+* @param { Array }arr1 
+* @param { Array }arr2 
 */
 function getArrDifference(arr1, arr2) {
     return arr1.concat(arr2).filter(function (v, i, arr) {
@@ -820,6 +871,23 @@ function getArrDifference(arr1, arr2) {
     })
 }
 
+/**
+ * 输出两个数组中相同的元素
+ * @param { *Array } arr1 
+ * @param { *Array } arr2 
+ */
+
+function getArrEqual(arr1, arr2) {
+    var newArr = [];
+    for (var i = 0; i < arr2.length; i++) {
+        for (var j = 0; j < arr1.length; j++) {
+            if (arr1[j] === arr2[i]) {
+                newArr.push(arr1[j]);
+            }
+        }
+    }
+    return newArr;
+}
 
 
 /**
@@ -877,3 +945,258 @@ function dateFormat(str) {
     return str.split(" ")[0];
 }
 
+/**
+ * ********************************
+ * 将对象转化成二维数组
+ * @param {*Object}
+ * eg {a:1,b:2} => [[a,1],[b,2]]
+ * ********************************
+ */
+function object2Array(obj) {
+    var array = [];
+    for (var key in obj) {
+        var _arr = [];
+        _arr[0] = key;
+        _arr[1] = obj[key] || "";
+        array.push(_arr);
+    }
+    return array;
+}
+
+/**
+ * ********************************
+ * 数组规范化处理
+ * 去除数组中 Boolean值为false的数据
+ * ********************************
+ */
+function removeIllegalArrayElement(array) {
+    return array.filter(function (item) {
+        return item;
+    })
+}
+
+/**
+ * 获取当前登录账户的详细信息
+ * emial / tel / cost center等
+ * @param {*} login 
+ */
+function getUserProfilebyLoginAsync(login) {
+    //这里传递的是用户名称，如：apac\tianyuz
+    return new Promise(function (resolve, reject) {
+        if (!login) {
+            login = $().SPServices.SPGetCurrentUser({
+                fieldName: "Name"
+            });
+        }
+        $().SPServices({
+            operation: 'GetUserProfileByName',
+            async: true,
+            accountName: login,
+            completefunc: function (xData, Status) {
+                if (Status === 'success') {
+                    var user = {};
+                    $(xData.responseXML).SPFilterNode("PropertyData").each(function () {
+                        user[$(this).find("Name").text()] = $(this).find("Value").text();
+                    });
+                    ;
+                    user.login = user.AccountName || "";
+                    user.full_name = user.PreferredName || "";
+                    user.email = user.WorkEmail || "";
+                    user.department = user.Department || "";
+                    user.telephone = user.WorkPhone || "";
+                    user.dcxcostcenter = user.dcxCostCenter || "";
+                    user.userName = user.PreferredName || "";
+                    try {
+                        var dn = user["SPS-DistinguishedName"];
+                        var sstr = "";
+                        if (~dn.indexOf("GlobalResources")) {
+                            sstr = "GlobalResources,OU=";
+                        }
+                        else {
+                            sstr = "Users,OU=";
+                        }
+                        user.companycode = dn.split(sstr)[1].split(',')[0];
+                        resolve(user)
+                    }
+                    catch (e) {
+                        user.companycode = "";
+                        resolve(e)
+                    }
+                } else {
+                    reject(xData)
+                }
+            }
+        });
+    })
+}
+
+
+/**
+ * *********************************************
+ * SharePoint batch webservice封装批量更新方法
+ * 2021-1-29更新
+ * *********************************************
+ */
+
+/**
+ * ********************************
+ * @param {*String} listName list列表名称
+ * @param {*Object} itemsData 传递参数
+ * 
+ * 参数格式：
+ * [{    
+ * //  ID:"1",
+ * //  Title: "123",
+ * //  RequestNumber: "F11111"
+ * },{
+ * //  ID:"2",
+ * //  Title: "1234",
+ * //  RequestNumber: "F111112"
+ * }]
+ * ********************************
+ */
+function updateListItemsBatch(listName, itemsData, arrayField) {
+    var config = mappingParamsMethod(itemsData);
+    var soapEnv = generateBatchString(listName, config);
+    var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+    return new Promise(function (resolve, reject) {
+        $.ajax({
+            url: url,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
+            },
+            contentType: "text/xml; charset=utf-8",
+            type: "POST",
+            dataType: "xml",
+            data: soapEnv,
+            complete: function (xData, Status) {
+                debugger;
+                if (Status === 'success') {
+                    if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
+                        var arr = {};
+                        arr.status = 'success';
+                        arr.result = [];
+                        $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
+                            var data = {};
+                            var action = $(val).attr('ID').split(',')[1];
+                            var ErrorCode = $(this).find("ErrorCode").text();
+                            data.action = action;
+                            data.errorCode = ErrorCode;
+                            $(val).SPFilterNode("z:row").each(function (j, io) {
+                                if (arrayField && arrayField.length > 0) {
+                                    for (var k = 0; k < arrayField.length; k++) {
+                                        //将需要显示的字段放置到返回对象中
+                                        data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+                                    }
+                                } else {
+                                    data.ID = $(io).attr("ows_ID");
+                                    data.Title = $(io).attr("ows_Title");
+                                }
+
+                            });
+                            arr.result.push(data);
+                        })
+                        console.log(arr);
+                        resolve(arr);
+                    } else {
+                        resolve([]);
+                    }
+                } else {
+                    reject('call webservice _vti_bin/lists.asmx error');
+                }
+
+            },
+        });
+    })
+}
+
+
+
+/**
+ * 
+ * @param {*Array} config  [{},{}]
+ * //转换之后参数格式如下：
+ * // config = [{
+ * //     method: "New",
+ * //     updateFields: {
+ * //         Title: "1",
+ * //         Date_Column: "1",
+ * //         Date_Time_Column: "1"
+ * //     },
+ * // }];
+ * 
+ */
+function mappingParamsMethod(config) {
+    return config.map(function (item) {
+        var obj = {};
+        obj['method'] = 'New';
+        obj['updateFields'] = item;
+        for (var key in item) {
+            if (
+                key === 'ID' &&
+                item[key] &&
+                typeof item[key] !== 'undefined'
+            ) {
+                obj['method'] = 'Update';
+                break;
+            }
+        }
+        return obj;
+    })
+}
+
+
+function generateBatchString(listName, config) {
+    if (!listName) {
+        console.log('generateBatchString函数未传递listName')
+        return;
+    }
+    if (JSON.stringify(config) == "{}") {
+        console.log("config为空")
+        return;
+    }
+    var onErrorAction = "Continue";
+    var rootNode_start = `<Batch OnError="${onErrorAction}"  >`;
+    var rootNode_end = "</Batch>";
+    var methodNode_body = "";
+    config.forEach(function (item, i) {
+        var method = item.method;
+        var methodId = i + 1;
+        var methodNode_start = `<Method ID="${methodId}" Cmd="${method}">`;
+        var methodNode_end = "</Method>";
+        for (var key in item.updateFields) {
+            var FiledResutl = '';
+            if (key === 'ID') {
+                if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
+                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+                    var FieldNode_end = "</Field>";
+                    var FieldNode_body = FieldNode_start + FieldNode_end;
+                } else {
+                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+                    var FieldNode_end = "</Field>";
+                    var FieldNode_body = FieldNode_start + FieldNode_end;
+
+                }
+            }
+            var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+            var FieldNode_end = "</Field>";
+            var FieldNode_body = FieldNode_start + FieldNode_end;
+            FiledResutl += FieldNode_body;
+            methodNode_start += FiledResutl;
+        }
+        methodNode_start += methodNode_end;
+        methodNode_body += methodNode_start;
+    });
+    rootNode_start += methodNode_body;
+    var batch = rootNode_start + rootNode_end;
+    var soapEnv =
+        "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
+         <soap:Body> \
+        <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
+        <listName>"+ listName + "</listName> \
+        <updates>" + batch + "</updates> \
+        </UpdateListItems> \
+        </soap:Body> \
+        </soap:Envelope>";
+    return soapEnv;
+}
