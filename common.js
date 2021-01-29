@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.4  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
- * 作者: Tianyu Zhang
- * 时间: 2020-11-8
+ * version 1.7  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * 作者: apsolut China Co., Ltd.
+ * 更新时间: 2020-1-29
  */
 
 
@@ -43,14 +43,17 @@ function getListDataSync(listName, query, arrayField, queryNumber) {
         CAMLQuery: query,
         CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
         completefunc: function (xData, Status) {
-            if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                    for (var j = 0; j < arrayField.length; j++) {
-                        var key = String(arrayField[j]);
-                        data[i] ? data[i] : data[i] = {};
-                        data[i][key] = $(this).attr("ows_" + key + "") || "";
-                    }
-                });
+            if (Status === 'success') {
+                if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
+                    $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                        for (var j = 0; j < arrayField.length; j++) {
+                            var key = String(arrayField[j]);
+                            data[i] ? data[i] : data[i] = {};
+                            data[i][key] = $(this).attr("ows_" + key + "") || "";
+                        }
+                    });
+                }
+                //没有数据则 返回data = []
             } else {
                 var err = {};
                 err['response'] = xData.responseText;
@@ -99,21 +102,28 @@ function getListDataAsync(listName, query, arrayField, queryNumber) {
             CAMLQuery: query,
             CAMLRowLimit: isNaN(queryNumber) ? '' : String(parseInt(queryNumber)),
             completefunc: function (xData, Status) {
-                if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
-                    var data = [];
-                    $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
-                        for (var j = 0; j < arrayField.length; j++) {
-                            var key = String(arrayField[j]);
-                            data[i] ? data[i] : data[i] = {};
-                            data[i][key] = $(this).attr("ows_" + key + "") || "";
-                        }
-                    });
-                    resolve(data);
+                if (Status === 'success') {
+                    if ($(xData.responseXML).SPFilterNode("z:row").length > 0) {
+                        var data = [];
+                        $(xData.responseXML).SPFilterNode("z:row").each(function (i, val) {
+                            for (var j = 0; j < arrayField.length; j++) {
+                                var key = String(arrayField[j]);
+                                data[i] ? data[i] : data[i] = {};
+                                data[i][key] = $(this).attr("ows_" + key + "") || "";
+                            }
+                        });
+                        resolve(data);
+                    } else {
+                        // var err = {};
+                        // err['response'] = xData.responseText;
+                        // err['status'] = "error";
+                        resolve([]);
+                    }
                 } else {
                     var err = {};
                     err['response'] = xData.responseText;
                     err['status'] = "error";
-                    reject(err);
+                    reject(err)
                 }
             }
         });
@@ -190,6 +200,176 @@ function insertDataIntoListAsync(listName, data) {
         });
     })
 }
+
+
+/**
+ * 检查所传入的数组是否含有ID
+ * 如果存在ID值，则返回ID
+ * 不存在ID 返回一个空字符串
+ */
+function checkArrayhasIDField(array) {
+    var flag = "";
+    $.each(array, function (i, item) {
+        var type = Object.prototype.toString.call(item);
+        if (type === '[object Array]' && item[0] === 'ID' && (item[1] && item[1] != 'undefined')) {
+            //说明该数组中包含ID字段
+            flag = item[1];
+            return false;
+        }
+    })
+    return flag;
+}
+
+/**
+ * 批量添加/更新表单数据
+ * 如果传入存在[ID,'11']这种
+ * @param {*} listName  表单名称
+ * @param {*} arraylistItem  [[[],[],[]],[[],[],[]]] 传入的二维数组参数
+ * 异步函数
+ */
+function mulInsertListDataAsync(listName, arraylistItems) {
+    return new Promise(function (resolve, reject) {
+        (function loop(index) {
+            var f = checkArrayhasIDField(arraylistItems[index]);
+            if (!f) {
+                //create
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    batchCmd: 'New',
+                    listName: listName,
+                    valuepairs: arraylistItems[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            var approvalLineID = $(xData.responseXML).SPFilterNode("z:row").attr("ows_ID");
+                            console.log("approval line id:" + approvalLineID);
+                            if (index < arraylistItems.length - 1) {
+                                console.log(index);
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                console.log('insert data success')
+                                resolve(true);
+                            }
+                        } else {
+                            var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                            reject(errorText);
+                        }
+                    }
+                });
+            } else {
+                //update
+                var approverLineID = _getItemsID(arraylistItems[index]);
+                $().SPServices({
+                    operation: 'UpdateListItems',
+                    async: true,
+                    //batchCmd: 'New',
+                    ID: approverLineID,
+                    listName: listName,
+                    valuepairs: arraylistItems[index],
+                    completefunc: function (xData, Status) {
+                        if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                            if (index < arraylistItems.length - 1) {
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                console.log('update data success')
+                                resolve(true);
+                            }
+                        } else {
+                            var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                            reject(errorText);
+                        }
+                    }
+                });
+            }
+        })(0);
+    })
+}
+
+/**
+ * 批量添加/更新表单数据
+ * 如果传入存在[ID,'11']这种
+ * @param {*} listName  表单名称
+ * @param {*} arraylistItem  [[[],[],[]],[[],[],[]]] 传入的二维数组参数
+ * 同步函数
+ */
+function mulInsertListDataSync(listName, arraylistItems) {
+    var result = [];
+    for (var index = 0; arraylistItems < array.length; index++) {
+        var f = checkArrayhasIDField(arraylistItems[index]);
+        if (!f) {
+            //create
+            $().SPServices({
+                operation: 'UpdateListItems',
+                async: false,
+                batchCmd: 'New',
+                listName: listName,
+                valuepairs: arraylistItems[index],
+                completefunc: function (xData, Status) {
+                    if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                        result.push(true)
+                    } else {
+                        var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                        console.log(errorText);
+                        result.push(false);
+                    }
+                }
+            });
+        } else {
+            //update
+            var approverLineID = _getItemsID(arraylistItems[index]);
+            $().SPServices({
+                operation: 'UpdateListItems',
+                async: false,
+                //batchCmd: 'New',
+                ID: approverLineID,
+                listName: listName,
+                valuepairs: arraylistItems[index],
+                completefunc: function (xData, Status) {
+                    if (Status === "success" && $(xData.responseXML).find("ErrorCode").text() === "0x00000000") {
+                        result.push(true)
+                    } else {
+                        var errorText = $(xData.responseXML).SPFilterNode("ErrorText")[0].textContent;
+                        console.log(errorText);
+                        result.push(false)
+                    }
+                }
+            });
+        }
+    }
+    var _result = true;
+    if (result.length > 0) {
+        result.forEach(function (item) {
+            if (!item) {
+                _result = false;
+            }
+        })
+    }
+    return _result;
+}
+
+/**
+ * 获取二维数组中的id值
+ * [["ID",12],["company","DGRC"]]
+ */
+function _getItemsID(array) {
+    var approvalLineID = "";
+    $.each(array, function (i, item) {
+        var type = Object.prototype.toString.call(item);
+        if (type === '[object Array]' && item[0] === 'ID' && item[1]) {
+            //说明该数组中包含ID字段
+            approvalLineID = item[1]
+            return false;
+        }
+    })
+    return approvalLineID;
+}
+
+
+
+
+
 /**
  * 删除item 同步方法，返回一个obj对象
  */
@@ -381,6 +561,15 @@ function ConvertDateISO(dateVal) {
     return result;
 }
 
+/**
+ * 获取当前时间
+ * ISO格式
+ */
+
+function getCurrentDateTime() {
+    return ConvertDateISO(new Date());
+}
+
 
 /**
  * 获取url中传递的参数
@@ -449,7 +638,7 @@ function getUserGroupsAsync(username) {
                     });
                     resolve(userInGroup);
                 } else {
-                    reject([]); //获取权限失败
+                    resolve([]); //获取权限失败
                 }
 
             }
@@ -457,6 +646,67 @@ function getUserGroupsAsync(username) {
 
     })
 }
+
+/**
+ * 检查当前登录人是是否存在某个权限或某些权限
+ * @param {*String / array} userGroup 所查询的权限
+ * 当参数为array时，根据传入的参数，返回对应的boolean值
+ */
+function userHasGroupSync(userGroup) {
+    //首先检查userGroup类型
+    if (userGroup && typeof userGroup === 'string') {
+        var userContainGroup = getUserGroupsSync();
+        if (userContainGroup.indexOf(userGroup) > -1) {
+            return true
+        }
+    } else if (typeof userGroup === 'object' && Object.prototype.toString.call(userGroup) === '[object Array]' && userGroup) {
+        var arr = [];
+        for (var i = 0; i < userGroup.length; i++) {
+            if (userContainGroup.indexOf(userGroup[i]) > -1) {
+                arr.push(true);
+            } else {
+                arr.push(false);
+            }
+        }
+        return arr;
+    }
+}
+
+
+/**
+ * 检查当前登录人是是否存在某个权限或某些权限
+ * @param {*String / array} userGroup 所查询的权限
+ * 当参数为array时，根据传入的参数，返回对应的boolean值
+ */
+function userHasGroupAsync(userGroup) {
+    return new Promise(function (resolve, reject) {
+        getUserGroupsAsync().then(function (userContainGroup) {
+            //首先检查userGroup类型
+            if (userGroup && typeof userGroup === 'string') {
+                if (userContainGroup.indexOf(userGroup) > -1) {
+                    resolve(true)
+                }
+            } else if (typeof userGroup === 'object' && Object.prototype.toString.call(userGroup) === '[object Array]' && userGroup) {
+                var arr = [];
+                for (var i = 0; i < userGroup.length; i++) {
+                    if (userContainGroup.indexOf(userGroup[i]) > -1) {
+                        arr.push(true);
+                    } else {
+                        arr.push(false);
+                    }
+                }
+                resolve(arr);
+            }
+        }).catch(function (e) {
+            reject(e)
+        })
+    })
+
+}
+
+
+
+
 
 
 /**
@@ -511,11 +761,12 @@ Date.prototype.Format = function (formatStr) {
  * 生成唯一编号，一般用于Title字段
  * 该方法返回一个唯一的字符串
  */
-function GenerateNumber() {
+function GenerateNumber(str) {
+    str ? str : str = "F";
     var newdate = new Date();
     var newmonth = (newdate.getMonth() + 1);
     var curNumber = newdate.Format('YYYY') + (newmonth < 10 ? ('0' + newmonth) : newmonth) + newdate.Format('DD') + "-" + newdate.Format('HHmmSS');
-    var title = 'F' + curNumber;
+    var title = str + curNumber;
     return title;
 }
 
@@ -557,7 +808,6 @@ function deleteItemsInListAsync(listname, array) {
                             }
                         }
                     });
-
                 })
             })(i)
         }
@@ -612,8 +862,8 @@ function unique(arr) {
 
 /**
 * 输出两个数组中不同的元素
-* @param { Array }arr1 获取到的category的id数组集合
-* @param { Array }arr2 当前的category的id数组集合
+* @param { Array }arr1 
+* @param { Array }arr2 
 */
 function getArrDifference(arr1, arr2) {
     return arr1.concat(arr2).filter(function (v, i, arr) {
@@ -621,3 +871,332 @@ function getArrDifference(arr1, arr2) {
     })
 }
 
+/**
+ * 输出两个数组中相同的元素
+ * @param { *Array } arr1 
+ * @param { *Array } arr2 
+ */
+
+function getArrEqual(arr1, arr2) {
+    var newArr = [];
+    for (var i = 0; i < arr2.length; i++) {
+        for (var j = 0; j < arr1.length; j++) {
+            if (arr1[j] === arr2[i]) {
+                newArr.push(arr1[j]);
+            }
+        }
+    }
+    return newArr;
+}
+
+
+/**
+ * 对象合并polyfill
+ * 为兼容IE浏览器使用Object.assign()方法
+ */
+
+function zyEs6AssignPolyfill() {
+    if (!Object.assign) {
+        Object.defineProperty(Object, "assign", {
+            enumerable: false,
+            configurable: true,
+            writable: true,
+            value: function (target, firstSource) {
+                "use strict";
+                if (target === undefined || target === null) throw new TypeError("Cannot convert first argument to object");
+                var to = Object(target);
+                for (var i = 1; i < arguments.length; i++) {
+                    var nextSource = arguments[i];
+                    if (nextSource === undefined || nextSource === null) continue;
+                    var keysArray = Object.keys(Object(nextSource));
+                    for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                        var nextKey = keysArray[nextIndex];
+                        var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                        if (desc !== undefined && desc.enumerable) to[nextKey] = nextSource[nextKey];
+                    }
+                }
+                return to;
+            }
+        });
+    }
+}
+
+/**
+ * 判断当前运行环境是否为IE浏览器
+ * 是  返回true
+ * 不是  返回fasle
+ */
+function isIE() {
+    if (!!window.ActiveXObject || "ActiveXObject" in window) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * 日期字符串截取
+ * @param {*} str 
+ */
+function dateFormat(str) {
+    if (!str || typeof str != 'string') {
+        return "";
+    }
+    return str.split(" ")[0];
+}
+
+/**
+ * ********************************
+ * 将对象转化成二维数组
+ * @param {*Object}
+ * eg {a:1,b:2} => [[a,1],[b,2]]
+ * ********************************
+ */
+function object2Array(obj) {
+    var array = [];
+    for (var key in obj) {
+        var _arr = [];
+        _arr[0] = key;
+        _arr[1] = obj[key] || "";
+        array.push(_arr);
+    }
+    return array;
+}
+
+/**
+ * ********************************
+ * 数组规范化处理
+ * 去除数组中 Boolean值为false的数据
+ * ********************************
+ */
+function removeIllegalArrayElement(array) {
+    return array.filter(function (item) {
+        return item;
+    })
+}
+
+/**
+ * 获取当前登录账户的详细信息
+ * emial / tel / cost center等
+ * @param {*} login 
+ */
+function getUserProfilebyLoginAsync(login) {
+    //这里传递的是用户名称，如：apac\tianyuz
+    return new Promise(function (resolve, reject) {
+        if (!login) {
+            login = $().SPServices.SPGetCurrentUser({
+                fieldName: "Name"
+            });
+        }
+        $().SPServices({
+            operation: 'GetUserProfileByName',
+            async: true,
+            accountName: login,
+            completefunc: function (xData, Status) {
+                if (Status === 'success') {
+                    var user = {};
+                    $(xData.responseXML).SPFilterNode("PropertyData").each(function () {
+                        user[$(this).find("Name").text()] = $(this).find("Value").text();
+                    });
+                    ;
+                    user.login = user.AccountName || "";
+                    user.full_name = user.PreferredName || "";
+                    user.email = user.WorkEmail || "";
+                    user.department = user.Department || "";
+                    user.telephone = user.WorkPhone || "";
+                    user.dcxcostcenter = user.dcxCostCenter || "";
+                    user.userName = user.PreferredName || "";
+                    try {
+                        var dn = user["SPS-DistinguishedName"];
+                        var sstr = "";
+                        if (~dn.indexOf("GlobalResources")) {
+                            sstr = "GlobalResources,OU=";
+                        }
+                        else {
+                            sstr = "Users,OU=";
+                        }
+                        user.companycode = dn.split(sstr)[1].split(',')[0];
+                        resolve(user)
+                    }
+                    catch (e) {
+                        user.companycode = "";
+                        resolve(e)
+                    }
+                } else {
+                    reject(xData)
+                }
+            }
+        });
+    })
+}
+
+
+/**
+ * *********************************************
+ * SharePoint batch webservice封装批量更新方法
+ * 2021-1-29更新
+ * *********************************************
+ */
+
+/**
+ * ********************************
+ * @param {*String} listName list列表名称
+ * @param {*Object} itemsData 传递参数
+ * 
+ * 参数格式：
+ * [{    
+ * //  ID:"1",
+ * //  Title: "123",
+ * //  RequestNumber: "F11111"
+ * },{
+ * //  ID:"2",
+ * //  Title: "1234",
+ * //  RequestNumber: "F111112"
+ * }]
+ * ********************************
+ */
+function updateListItemsBatch(listName, itemsData, arrayField) {
+    var config = mappingParamsMethod(itemsData);
+    var soapEnv = generateBatchString(listName, config);
+    var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+    return new Promise(function (resolve, reject) {
+        $.ajax({
+            url: url,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
+            },
+            contentType: "text/xml; charset=utf-8",
+            type: "POST",
+            dataType: "xml",
+            data: soapEnv,
+            complete: function (xData, Status) {
+                debugger;
+                if (Status === 'success') {
+                    if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
+                        var arr = {};
+                        arr.status = 'success';
+                        arr.result = [];
+                        $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
+                            var data = {};
+                            var action = $(val).attr('ID').split(',')[1];
+                            var ErrorCode = $(this).find("ErrorCode").text();
+                            data.action = action;
+                            data.errorCode = ErrorCode;
+                            $(val).SPFilterNode("z:row").each(function (j, io) {
+                                if (arrayField && arrayField.length > 0) {
+                                    for (var k = 0; k < arrayField.length; k++) {
+                                        //将需要显示的字段放置到返回对象中
+                                        data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+                                    }
+                                } else {
+                                    data.ID = $(io).attr("ows_ID");
+                                    data.Title = $(io).attr("ows_Title");
+                                }
+
+                            });
+                            arr.result.push(data);
+                        })
+                        console.log(arr);
+                        resolve(arr);
+                    } else {
+                        resolve([]);
+                    }
+                } else {
+                    reject('call webservice _vti_bin/lists.asmx error');
+                }
+
+            },
+        });
+    })
+}
+
+
+
+/**
+ * 
+ * @param {*Array} config  [{},{}]
+ * //转换之后参数格式如下：
+ * // config = [{
+ * //     method: "New",
+ * //     updateFields: {
+ * //         Title: "1",
+ * //         Date_Column: "1",
+ * //         Date_Time_Column: "1"
+ * //     },
+ * // }];
+ * 
+ */
+function mappingParamsMethod(config) {
+    return config.map(function (item) {
+        var obj = {};
+        obj['method'] = 'New';
+        obj['updateFields'] = item;
+        for (var key in item) {
+            if (
+                key === 'ID' &&
+                item[key] &&
+                typeof item[key] !== 'undefined'
+            ) {
+                obj['method'] = 'Update';
+                break;
+            }
+        }
+        return obj;
+    })
+}
+
+
+function generateBatchString(listName, config) {
+    if (!listName) {
+        console.log('generateBatchString函数未传递listName')
+        return;
+    }
+    if (JSON.stringify(config) == "{}") {
+        console.log("config为空")
+        return;
+    }
+    var onErrorAction = "Continue";
+    var rootNode_start = `<Batch OnError="${onErrorAction}"  >`;
+    var rootNode_end = "</Batch>";
+    var methodNode_body = "";
+    config.forEach(function (item, i) {
+        var method = item.method;
+        var methodId = i + 1;
+        var methodNode_start = `<Method ID="${methodId}" Cmd="${method}">`;
+        var methodNode_end = "</Method>";
+        for (var key in item.updateFields) {
+            var FiledResutl = '';
+            if (key === 'ID') {
+                if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
+                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+                    var FieldNode_end = "</Field>";
+                    var FieldNode_body = FieldNode_start + FieldNode_end;
+                } else {
+                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+                    var FieldNode_end = "</Field>";
+                    var FieldNode_body = FieldNode_start + FieldNode_end;
+
+                }
+            }
+            var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
+            var FieldNode_end = "</Field>";
+            var FieldNode_body = FieldNode_start + FieldNode_end;
+            FiledResutl += FieldNode_body;
+            methodNode_start += FiledResutl;
+        }
+        methodNode_start += methodNode_end;
+        methodNode_body += methodNode_start;
+    });
+    rootNode_start += methodNode_body;
+    var batch = rootNode_start + rootNode_end;
+    var soapEnv =
+        "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
+         <soap:Body> \
+        <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
+        <listName>"+ listName + "</listName> \
+        <updates>" + batch + "</updates> \
+        </UpdateListItems> \
+        </soap:Body> \
+        </soap:Envelope>";
+    return soapEnv;
+}
