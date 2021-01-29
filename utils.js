@@ -1145,58 +1145,61 @@ function mappingParamsMethod(config) {
     })
 }
 
-
 function generateBatchString(listName, config) {
-    if (!listName) {
-        console.log('generateBatchString函数未传递listName')
-        return;
-    }
-    if (JSON.stringify(config) == "{}") {
-        console.log("config为空")
-        return;
-    }
-    var onErrorAction = "Continue";
-    var rootNode_start = `<Batch OnError="${onErrorAction}"  >`;
-    var rootNode_end = "</Batch>";
-    var methodNode_body = "";
-    config.forEach(function (item, i) {
-        var method = item.method;
-        var methodId = i + 1;
-        var methodNode_start = `<Method ID="${methodId}" Cmd="${method}">`;
-        var methodNode_end = "</Method>";
-        for (var key in item.updateFields) {
-            var FiledResutl = '';
-            if (key === 'ID') {
-                if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
-                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
-                    var FieldNode_end = "</Field>";
-                    var FieldNode_body = FieldNode_start + FieldNode_end;
-                } else {
-                    var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
-                    var FieldNode_end = "</Field>";
-                    var FieldNode_body = FieldNode_start + FieldNode_end;
+  if (!listName) {
+    console.log('generateBatchString函数未传递listName');
+    return;
+  }
 
-                }
-            }
-            var FieldNode_start = `<Field Name="${key}">${item.updateFields[key]}`;
-            var FieldNode_end = "</Field>";
-            var FieldNode_body = FieldNode_start + FieldNode_end;
-            FiledResutl += FieldNode_body;
-            methodNode_start += FiledResutl;
+  if (JSON.stringify(config) == "{}") {
+    console.log("config为空");
+    return;
+  }
+
+  var onErrorAction = "Continue";
+  var rootNode_start = "<Batch OnError=\"" + onErrorAction + "\"  >";
+  var rootNode_end = "</Batch>";
+  var methodNode_body = "";
+  config.forEach(function (item, i) {
+    var method = item.method;
+    var methodId = i + 1;
+    var methodNode_start = "<Method ID=\"" + methodId + "\" Cmd=\"" + method + "\">";
+    var methodNode_end = "</Method>";
+
+    for (var key in item.updateFields) {
+      var FiledResutl = '';
+
+      if (key === 'ID') {
+        if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
+          var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+          var FieldNode_end = "</Field>";
+          var FieldNode_body = FieldNode_start + FieldNode_end;
+        } else {
+          var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+          var FieldNode_end = "</Field>";
+          var FieldNode_body = FieldNode_start + FieldNode_end;
         }
-        methodNode_start += methodNode_end;
-        methodNode_body += methodNode_start;
-    });
-    rootNode_start += methodNode_body;
-    var batch = rootNode_start + rootNode_end;
-    var soapEnv =
-        "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
+      }
+
+      var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+      var FieldNode_end = "</Field>";
+      var FieldNode_body = FieldNode_start + FieldNode_end;
+      FiledResutl += FieldNode_body;
+      methodNode_start += FiledResutl;
+    }
+
+    methodNode_start += methodNode_end;
+    methodNode_body += methodNode_start;
+  });
+  rootNode_start += methodNode_body;
+  var batch = rootNode_start + rootNode_end;
+  var soapEnv = "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
          <soap:Body> \
         <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
-        <listName>"+ listName + "</listName> \
+        <listName>" + listName + "</listName> \
         <updates>" + batch + "</updates> \
         </UpdateListItems> \
         </soap:Body> \
         </soap:Envelope>";
-    return soapEnv;
+  return soapEnv;
 }
