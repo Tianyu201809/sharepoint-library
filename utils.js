@@ -1055,7 +1055,7 @@ function getUserProfilebyLoginAsync(login) {
  * }]
  * ********************************
  */
-function updateListItemsBatch(listName, itemsData, arrayField) {
+function updateListItemsBatchAsync(listName, itemsData, arrayField) {
     var config = mappingParamsMethod(itemsData);
     var soapEnv = generateBatchString(listName, config);
     var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
