@@ -1335,7 +1335,6 @@ function updateListItemsBatchSync(listName, itemsData, arrayField) {
           </soap:Envelope>";
     return soapEnv;
   }
-
 }
 
 
