@@ -1042,9 +1042,10 @@ function getUserProfilebyLoginAsync(login) {
  * ********************************
  * @param {*String} listName list列表名称
  * @param {*Object} itemsData 传递参数
+ * @param {*Object Array} arrayField 需要返回查看的参数
  * 
  * 参数格式：
- * [{    
+ * itemsData = [{    
  * //  ID:"1",
  * //  Title: "123",
  * //  RequestNumber: "F11111"
@@ -1053,9 +1054,19 @@ function getUserProfilebyLoginAsync(login) {
  * //  Title: "1234",
  * //  RequestNumber: "F111112"
  * }]
+ * 
+ * arrayField = [‘ID’, 'Title', 'OtherFieldName...']
+ * 
+ * 
  * ********************************
  */
 function updateListItemsBatchAsync(listName, itemsData, arrayField) {
+    if (!listName) {
+        return Promise.reject('listName is undefined')
+    }
+    else if (!itemsData || itemsData.length === 0) {
+        return Promise.reject('itemsData is empty')
+    }
     var config = mappingParamsMethod(itemsData);
     var soapEnv = generateBatchString(listName, config);
     var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
@@ -1108,98 +1119,232 @@ function updateListItemsBatchAsync(listName, itemsData, arrayField) {
             },
         });
     })
+
+    /**
+    * 
+    * @param {*Array} config  [{},{}]
+    * //转换之后参数格式如下：
+    * // config = [{
+    * //     method: "New",
+    * //     updateFields: {
+    * //         Title: "1",
+    * //         Date_Column: "1",
+    * //         Date_Time_Column: "1"
+    * //     },
+    * // }];
+    * 
+    */
+    //内部参数转换
+    function mappingParamsMethod(config) {
+        return config.map(function (item) {
+            var obj = {};
+            obj['method'] = 'New';
+            obj['updateFields'] = item;
+            for (var key in item) {
+                if (
+                    key === 'ID' &&
+                    item[key] &&
+                    typeof item[key] !== 'undefined'
+                ) {
+                    obj['method'] = 'Update';
+                    break;
+                }
+            }
+            return obj;
+        })
+    }
+    //生成soap请求报文
+    function generateBatchString(listName, config) {
+        if (!listName) {
+            console.log('generateBatchString函数未传递listName');
+            return;
+        }
+
+        if (JSON.stringify(config) == "{}") {
+            console.log("config为空");
+            return;
+        }
+
+        var onErrorAction = "Continue";
+        var rootNode_start = "<Batch OnError=\"" + onErrorAction + "\"  >";
+        var rootNode_end = "</Batch>";
+        var methodNode_body = "";
+        config.forEach(function (item, i) {
+            var method = item.method;
+            var methodId = i + 1;
+            var methodNode_start = "<Method ID=\"" + methodId + "\" Cmd=\"" + method + "\">";
+            var methodNode_end = "</Method>";
+            for (var key in item.updateFields) {
+                var FiledResutl = '';
+                if (key === 'ID') {
+                    if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
+                        var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                        var FieldNode_end = "</Field>";
+                        var FieldNode_body = FieldNode_start + FieldNode_end;
+                    } else {
+                        var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                        var FieldNode_end = "</Field>";
+                        var FieldNode_body = FieldNode_start + FieldNode_end;
+                    }
+                }
+                var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                var FieldNode_end = "</Field>";
+                var FieldNode_body = FieldNode_start + FieldNode_end;
+                FiledResutl += FieldNode_body;
+                methodNode_start += FiledResutl;
+            }
+            methodNode_start += methodNode_end;
+            methodNode_body += methodNode_start;
+        });
+        rootNode_start += methodNode_body;
+        var batch = rootNode_start + rootNode_end;
+        var soapEnv = "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
+           <soap:Body> \
+          <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
+          <listName>" + listName + "</listName> \
+          <updates>" + batch + "</updates> \
+          </UpdateListItems> \
+          </soap:Body> \
+          </soap:Envelope>";
+        return soapEnv;
+    }
 }
 
 
 
 /**
- * 
- * @param {*Array} config  [{},{}]
- * //转换之后参数格式如下：
- * // config = [{
- * //     method: "New",
- * //     updateFields: {
- * //         Title: "1",
- * //         Date_Column: "1",
- * //         Date_Time_Column: "1"
- * //     },
- * // }];
- * 
+ * ************************************
+ * 批量更新list数据 同步代码
+ * ************************************
  */
-function mappingParamsMethod(config) {
-    return config.map(function (item) {
-        var obj = {};
-        obj['method'] = 'New';
-        obj['updateFields'] = item;
-        for (var key in item) {
-            if (
-                key === 'ID' &&
-                item[key] &&
-                typeof item[key] !== 'undefined'
-            ) {
-                obj['method'] = 'Update';
-                break;
-            }
-        }
-        return obj;
-    })
-}
-
-function generateBatchString(listName, config) {
-  if (!listName) {
-    console.log('generateBatchString函数未传递listName');
-    return;
-  }
-
-  if (JSON.stringify(config) == "{}") {
-    console.log("config为空");
-    return;
-  }
-
-  var onErrorAction = "Continue";
-  var rootNode_start = "<Batch OnError=\"" + onErrorAction + "\"  >";
-  var rootNode_end = "</Batch>";
-  var methodNode_body = "";
-  config.forEach(function (item, i) {
-    var method = item.method;
-    var methodId = i + 1;
-    var methodNode_start = "<Method ID=\"" + methodId + "\" Cmd=\"" + method + "\">";
-    var methodNode_end = "</Method>";
-
-    for (var key in item.updateFields) {
-      var FiledResutl = '';
-
-      if (key === 'ID') {
-        if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
-          var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
-          var FieldNode_end = "</Field>";
-          var FieldNode_body = FieldNode_start + FieldNode_end;
-        } else {
-          var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
-          var FieldNode_end = "</Field>";
-          var FieldNode_body = FieldNode_start + FieldNode_end;
-        }
-      }
-
-      var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
-      var FieldNode_end = "</Field>";
-      var FieldNode_body = FieldNode_start + FieldNode_end;
-      FiledResutl += FieldNode_body;
-      methodNode_start += FiledResutl;
+function updateListItemsBatchSync(listName, itemsData, arrayField) {
+    if (!listName) {
+        return Promise.reject('listName is undefined')
     }
+    else if (!itemsData || itemsData.length === 0) {
+        return Promise.reject('itemsData is empty')
+    }
+    var config = mappingParamsMethod(itemsData);
+    var soapEnv = generateBatchString(listName, config);
+    var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+    var arr = {};
+    arr.result = [];
+    $.ajax({
+        url: url,
+        async: false,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
+        },
+        contentType: "text/xml; charset=utf-8",
+        type: "POST",
+        dataType: "xml",
+        data: soapEnv,
+        complete: function (xData, Status) {
+            if (Status === 'success') {
+                if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
+                    arr.status = 'success';
+                    $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
+                        var data = {};
+                        var action = $(val).attr('ID').split(',')[1];
+                        var ErrorCode = $(this).find("ErrorCode").text();
+                        data.action = action;
+                        data.errorCode = ErrorCode;
+                        $(val).SPFilterNode("z:row").each(function (j, io) {
+                            if (arrayField && arrayField.length > 0) {
+                                for (var k = 0; k < arrayField.length; k++) {
+                                    //将需要显示的字段放置到返回对象中
+                                    data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+                                }
+                            } else {
+                                data.ID = $(io).attr("ows_ID");
+                                data.Title = $(io).attr("ows_Title");
+                            }
 
-    methodNode_start += methodNode_end;
-    methodNode_body += methodNode_start;
-  });
-  rootNode_start += methodNode_body;
-  var batch = rootNode_start + rootNode_end;
-  var soapEnv = "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
-         <soap:Body> \
-        <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
-        <listName>" + listName + "</listName> \
-        <updates>" + batch + "</updates> \
-        </UpdateListItems> \
-        </soap:Body> \
-        </soap:Envelope>";
-  return soapEnv;
+                        });
+                        arr.result.push(data);
+                    })
+                }
+            } else {
+                arr.status = 'error';
+                arr.result = [];
+                arr.errorMessage = 'call method updateListItemsBatchSync fails, please check paramters';
+            }
+        },
+    });
+
+    return arr;
+    //内部参数转换
+    function mappingParamsMethod(config) {
+        return config.map(function (item) {
+            var obj = {};
+            obj['method'] = 'New';
+            obj['updateFields'] = item;
+            for (var key in item) {
+                if (
+                    key === 'ID' &&
+                    item[key] &&
+                    typeof item[key] !== 'undefined'
+                ) {
+                    obj['method'] = 'Update';
+                    break;
+                }
+            }
+            return obj;
+        })
+    }
+    //生成soap请求报文
+    function generateBatchString(listName, config) {
+        if (!listName) {
+            console.log('generateBatchString函数未传递listName');
+            return;
+        }
+
+        if (JSON.stringify(config) == "{}") {
+            console.log("config为空");
+            return;
+        }
+
+        var onErrorAction = "Continue";
+        var rootNode_start = "<Batch OnError=\"" + onErrorAction + "\"  >";
+        var rootNode_end = "</Batch>";
+        var methodNode_body = "";
+        config.forEach(function (item, i) {
+            var method = item.method;
+            var methodId = i + 1;
+            var methodNode_start = "<Method ID=\"" + methodId + "\" Cmd=\"" + method + "\">";
+            var methodNode_end = "</Method>";
+            for (var key in item.updateFields) {
+                var FiledResutl = '';
+                if (key === 'ID') {
+                    if (item.updateFields[key] && typeof item.updateFields[key] !== 'undefined') {
+                        var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                        var FieldNode_end = "</Field>";
+                        var FieldNode_body = FieldNode_start + FieldNode_end;
+                    } else {
+                        var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                        var FieldNode_end = "</Field>";
+                        var FieldNode_body = FieldNode_start + FieldNode_end;
+                    }
+                }
+                var FieldNode_start = "<Field Name=\"" + key + "\">" + item.updateFields[key];
+                var FieldNode_end = "</Field>";
+                var FieldNode_body = FieldNode_start + FieldNode_end;
+                FiledResutl += FieldNode_body;
+                methodNode_start += FiledResutl;
+            }
+            methodNode_start += methodNode_end;
+            methodNode_body += methodNode_start;
+        });
+        rootNode_start += methodNode_body;
+        var batch = rootNode_start + rootNode_end;
+        var soapEnv = "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
+             <soap:Body> \
+            <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
+            <listName>" + listName + "</listName> \
+            <updates>" + batch + "</updates> \
+            </UpdateListItems> \
+            </soap:Body> \
+            </soap:Envelope>";
+        return soapEnv;
+    }
 }
