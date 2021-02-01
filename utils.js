@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.7  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.8  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: apsolut China Co., Ltd.
- * 更新时间: 2020-1-29
+ * 更新时间: 2020-2-1
  */
 
 
@@ -1219,10 +1219,12 @@ function updateListItemsBatchAsync(listName, itemsData, arrayField) {
  */
 function updateListItemsBatchSync(listName, itemsData, arrayField) {
     if (!listName) {
-        return Promise.reject('listName is undefined')
+        console.log('listName is undefined')
+        return;
     }
     else if (!itemsData || itemsData.length === 0) {
-        return Promise.reject('itemsData is empty')
+        console.log('itemsData is empty')
+        return;
     }
     var config = mappingParamsMethod(itemsData);
     var soapEnv = generateBatchString(listName, config);
