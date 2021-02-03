@@ -4,9 +4,9 @@
  * 增删改查SP list
  * sync代表同步方法，async代表异步方法
  * 使用此工具类库的前置条件为引用jquery(3.0)以上版本和引用SPService类库，还有Promise类库（如果浏览器不支持ES6需要引入）
- * version 1.8  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
+ * version 1.9  github地址: https://github.com/Tianyu201809/sharepoint-library/tree/dev
  * 作者: apsolut China Co., Ltd.
- * 更新时间: 2020-2-1
+ * 更新时间: 2020-2-4
  */
 
 
@@ -1040,10 +1040,13 @@ function getUserProfilebyLoginAsync(login) {
 
 /**
  * ********************************
+ * 批量更新异步函数
  * @param {*String} listName list列表名称
  * @param {*Object} itemsData 传递参数
  * @param {*Object Array} arrayField 需要返回查看的参数
- * 
+ * @param {*Number} everyCount 每次请求更新的条目数(不要超过20，默认为10)
+ * @param {*String uri} 站点地址（默认为当前站点）
+ * *********************************
  * 参数格式：
  * itemsData = [{    
  * //  ID:"1",
@@ -1057,10 +1060,13 @@ function getUserProfilebyLoginAsync(login) {
  * 
  * arrayField = [‘ID’, 'Title', 'OtherFieldName...']
  * 
- * 
  * ********************************
  */
-function updateListItemsBatchAsync(listName, itemsData, arrayField) {
+function updateListItemsBatchAsync(listName, itemsData, arrayField, everyCount, siteUrl) {
+    isNaN(everyCount) ? everyCount = 10 : everyCount;
+    if (everyCount > 20) {
+        return Promise.reject('everyCount<每次请求更新条目数> 不要大于20');
+    }
     if (!listName) {
         return Promise.reject('listName is undefined')
     }
@@ -1068,56 +1074,86 @@ function updateListItemsBatchAsync(listName, itemsData, arrayField) {
         return Promise.reject('itemsData is empty')
     }
     var config = mappingParamsMethod(itemsData);
-    var soapEnv = generateBatchString(listName, config);
-    var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+
+    //url参数
+    if (siteUrl) {
+        var url = siteUrl + "/_vti_bin/lists.asmx";
+    } else if (window._spPageContextInfo) {
+        var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+    } else {
+        var siteUrl = $().SPServices.SPGetCurrentSite();
+        var url = siteUrl + "/_vti_bin/lists.asmx";
+    }
+
+    //执行递归更新操作
+    //批量更新，每个请求更新10条数据
+    var len = config.length;
+    var count = Math.ceil(len / everyCount);
+    var arr = {};
+    arr.result = [];
     return new Promise(function (resolve, reject) {
-        $.ajax({
-            url: url,
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
-            },
-            contentType: "text/xml; charset=utf-8",
-            type: "POST",
-            dataType: "xml",
-            data: soapEnv,
-            complete: function (xData, Status) {
-                debugger;
-                if (Status === 'success') {
-                    if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
-                        var arr = {};
-                        arr.status = 'success';
-                        arr.result = [];
-                        $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
-                            var data = {};
-                            var action = $(val).attr('ID').split(',')[1];
-                            var ErrorCode = $(this).find("ErrorCode").text();
-                            data.action = action;
-                            data.errorCode = ErrorCode;
-                            $(val).SPFilterNode("z:row").each(function (j, io) {
-                                if (arrayField && arrayField.length > 0) {
-                                    for (var k = 0; k < arrayField.length; k++) {
-                                        //将需要显示的字段放置到返回对象中
-                                        data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+        var startElement; //第1个
+        var endElement; //第10个
+        isNaN(everyCount) ? everyCount = 10 : everyCount;
+        (function loop(index) {
+            startElement = (index * everyCount);
+            endElement = startElement + everyCount;
+            var _params = config.slice(startElement, endElement);
+            var soapEnv = generateBatchString(listName, _params);
+            $.ajax({
+                url: url,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
+                },
+                contentType: "text/xml; charset=utf-8",
+                type: "POST",
+                dataType: "xml",
+                data: soapEnv,
+                complete: function (xData, Status) {
+                    if (Status === 'success') {
+                        if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
+                            //arr.status = 'success';
+                            $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
+                                var data = {};
+                                var action = $(val).attr('ID').split(',')[1];
+                                var ErrorCode = $(this).find("ErrorCode").text();
+                                data.action = action;
+                                data.errorCode = ErrorCode;
+                                $(val).SPFilterNode("z:row").each(function (j, io) {
+                                    if (arrayField && arrayField.length > 0) {
+                                        for (var k = 0; k < arrayField.length; k++) {
+                                            //将需要显示的字段放置到返回对象中
+                                            data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+                                        }
+                                    } else {
+                                        data.ID = $(io).attr("ows_ID");
+                                        data.Title = $(io).attr("ows_Title");
                                     }
-                                } else {
-                                    data.ID = $(io).attr("ows_ID");
-                                    data.Title = $(io).attr("ows_Title");
-                                }
 
-                            });
-                            arr.result.push(data);
-                        })
-                        console.log(arr);
-                        resolve(arr);
+                                });
+                                arr.result.push(data);
+                            })
+                            console.log(arr);
+                            if (index < count - 1) {
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                resolve(arr);
+                            }
+                        } else {
+                            if (index < count - 1) {
+                                index = index + 1;
+                                loop(index)
+                            } else {
+                                resolve(arr);
+                            }
+                        }
                     } else {
-                        resolve([]);
+                        reject('call webservice _vti_bin/lists.asmx error');
                     }
-                } else {
-                    reject('call webservice _vti_bin/lists.asmx error');
-                }
-
-            },
-        });
+                },
+            });
+        })(0)
     })
 
     /**
@@ -1151,6 +1187,22 @@ function updateListItemsBatchAsync(listName, itemsData, arrayField) {
                 }
             }
             return obj;
+        }).map(function (item) {
+            //特殊字符替换方法
+            function escapeValue(text) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return String(text).replace(/[&<>"']/g, function (m) { return map[m]; });
+            }
+            for (var key in item.updateFields) {
+                item.updateFields[key] = escapeValue(item.updateFields[key]);
+            }
+            return item;
         })
     }
     //生成soap请求报文
@@ -1210,71 +1262,100 @@ function updateListItemsBatchAsync(listName, itemsData, arrayField) {
     }
 }
 
-
-
-/**
- * ************************************
- * 批量更新list数据 同步代码
- * ************************************
- */
-function updateListItemsBatchSync(listName, itemsData, arrayField) {
+function updateListItemsBatchSync(listName, itemsData, arrayField, everyCount, siteUrl) {
+    isNaN(everyCount) ? everyCount = 10 : everyCount;
+    if (everyCount > 20) {
+        return Promise.reject('everyCount<每次请求更新条目数> 不要大于20');
+    }
     if (!listName) {
-        console.log('listName is undefined')
-        return;
+        return Promise.reject('listName is undefined')
     }
     else if (!itemsData || itemsData.length === 0) {
-        console.log('itemsData is empty')
-        return;
+        return Promise.reject('itemsData is empty')
     }
     var config = mappingParamsMethod(itemsData);
-    var soapEnv = generateBatchString(listName, config);
-    var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+
+    //url参数
+    if (siteUrl) {
+        var url = siteUrl + "/_vti_bin/lists.asmx";
+    } else if (window._spPageContextInfo) {
+        var url = _spPageContextInfo.webServerRelativeUrl + "/_vti_bin/lists.asmx";
+    } else {
+        var siteUrl = $().SPServices.SPGetCurrentSite();
+        var url = siteUrl + "/_vti_bin/lists.asmx";
+    }
+
+    //执行递归更新操作
+    //批量更新，每个请求更新10条数据
+    var len = config.length;
+    var count = Math.ceil(len / everyCount);
     var arr = {};
     arr.result = [];
-    $.ajax({
-        url: url,
-        async: false,
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
-        },
-        contentType: "text/xml; charset=utf-8",
-        type: "POST",
-        dataType: "xml",
-        data: soapEnv,
-        complete: function (xData, Status) {
-            if (Status === 'success') {
-                if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
-                    arr.status = 'success';
-                    $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
-                        var data = {};
-                        var action = $(val).attr('ID').split(',')[1];
-                        var ErrorCode = $(this).find("ErrorCode").text();
-                        data.action = action;
-                        data.errorCode = ErrorCode;
-                        $(val).SPFilterNode("z:row").each(function (j, io) {
-                            if (arrayField && arrayField.length > 0) {
-                                for (var k = 0; k < arrayField.length; k++) {
-                                    //将需要显示的字段放置到返回对象中
-                                    data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+    var startElement; //第1个
+    var endElement; //第10个
+    isNaN(everyCount) ? everyCount = 10 : everyCount;
+    (function loop(index) {
+        startElement = (index * everyCount);
+        endElement = startElement + everyCount;
+        var _params = config.slice(startElement, endElement);
+        var soapEnv = generateBatchString(listName, _params);
+        $.ajax({
+            url: url,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/sharepoint/soap/UpdateListItems");
+            },
+            async: false,
+            contentType: "text/xml; charset=utf-8",
+            type: "POST",
+            dataType: "xml",
+            data: soapEnv,
+            complete: function (xData, Status) {
+                if (Status === 'success') {
+                    if ($(xData.responseXML).SPFilterNode("Results").length > 0) {
+                        //arr.status = 'success';
+                        $(xData.responseXML).SPFilterNode("Result").each(function (i, val) {
+                            var data = {};
+                            var action = $(val).attr('ID').split(',')[1];
+                            var ErrorCode = $(this).find("ErrorCode").text();
+                            data.action = action;
+                            data.errorCode = ErrorCode;
+                            $(val).SPFilterNode("z:row").each(function (j, io) {
+                                if (arrayField && arrayField.length > 0) {
+                                    for (var k = 0; k < arrayField.length; k++) {
+                                        //将需要显示的字段放置到返回对象中
+                                        data[arrayField[k]] = $(io).attr("ows_" + arrayField[k]);
+                                    }
+                                } else {
+                                    data.ID = $(io).attr("ows_ID");
+                                    data.Title = $(io).attr("ows_Title");
                                 }
-                            } else {
-                                data.ID = $(io).attr("ows_ID");
-                                data.Title = $(io).attr("ows_Title");
-                            }
 
-                        });
-                        arr.result.push(data);
-                    })
+                            });
+                            arr.result.push(data);
+                        })
+                        console.log(arr);
+                        if (index < count - 1) {
+                            index = index + 1;
+                            loop(index)
+                        } else {
+
+                        }
+                    } else {
+                        if (index < count - 1) {
+                            index = index + 1;
+                            loop(index)
+                        } else {
+
+                        }
+                    }
+                } else {
+                    reject('call webservice _vti_bin/lists.asmx error');
                 }
-            } else {
-                arr.status = 'error';
-                arr.result = [];
-                arr.errorMessage = 'call method updateListItemsBatchSync fails, please check paramters';
-            }
-        },
-    });
-
+            },
+        });
+    })(0)
     return arr;
+
     //内部参数转换
     function mappingParamsMethod(config) {
         return config.map(function (item) {
@@ -1292,6 +1373,22 @@ function updateListItemsBatchSync(listName, itemsData, arrayField) {
                 }
             }
             return obj;
+        }).map(function (item) {
+            //特殊字符替换方法
+            function escapeValue(text) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return String(text).replace(/[&<>"']/g, function (m) { return map[m]; });
+            }
+            for (var key in item.updateFields) {
+                item.updateFields[key] = escapeValue(item.updateFields[key]);
+            }
+            return item;
         })
     }
     //生成soap请求报文
@@ -1340,13 +1437,13 @@ function updateListItemsBatchSync(listName, itemsData, arrayField) {
         rootNode_start += methodNode_body;
         var batch = rootNode_start + rootNode_end;
         var soapEnv = "<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'> \
-             <soap:Body> \
-            <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
-            <listName>" + listName + "</listName> \
-            <updates>" + batch + "</updates> \
-            </UpdateListItems> \
-            </soap:Body> \
-            </soap:Envelope>";
+           <soap:Body> \
+          <UpdateListItems xmlns='http://schemas.microsoft.com/sharepoint/soap/'> \
+          <listName>" + listName + "</listName> \
+          <updates>" + batch + "</updates> \
+          </UpdateListItems> \
+          </soap:Body> \
+          </soap:Envelope>";
         return soapEnv;
     }
 }
